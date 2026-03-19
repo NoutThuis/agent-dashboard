@@ -361,6 +361,118 @@
             justify-content: space-between;
             margin-bottom: 20px;
         }
+
+        /* ── Login Screen ─────────────────────────────── */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #0A0F1E 0%, #0F172A 100%);
+        }
+
+        .login-overlay.hidden {
+            display: none;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(40px) saturate(1.8);
+            -webkit-backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            width: 400px;
+            position: relative;
+            overflow: hidden;
+            animation: card-enter 400ms ease forwards;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 30%, rgba(255, 255, 255, 0.15) 70%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 200ms ease, background 200ms ease;
+        }
+
+        .login-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .login-input:focus {
+            border-color: rgba(124, 58, 237, 0.5);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.8), rgba(236, 72, 153, 0.8));
+            border: none;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.95);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 200ms ease, box-shadow 200ms ease;
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+        }
+
+        .login-btn:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.3);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .login-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #F87171;
+            display: none;
+        }
+
+        .login-error.visible {
+            display: block;
+        }
+
+        .app-container {
+            display: none;
+        }
+
+        .app-container.visible {
+            display: flex;
+        }
     </style>
 </head>
 <body class="font-inter antialiased">
@@ -372,8 +484,30 @@
         <div class="blob blob-3"></div>
     </div>
 
+    <!-- Login Screen -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="ambient-layer">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+            <div class="blob blob-3"></div>
+        </div>
+        <div class="login-card" style="z-index: 101;">
+            <div style="text-align:center;margin-bottom:32px;">
+                <div style="font-size:40px;margin-bottom:12px;">🤖</div>
+                <h2 style="font-size:22px;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:6px;">Agent OS</h2>
+                <p style="font-size:13px;color:rgba(255,255,255,0.4);">Sign in to access your dashboard</p>
+            </div>
+            <form id="loginForm" style="display:flex;flex-direction:column;gap:14px;">
+                <div id="loginError" class="login-error"></div>
+                <input type="email" class="login-input" id="loginEmail" placeholder="Email" autocomplete="email" required>
+                <input type="password" class="login-input" id="loginPassword" placeholder="Password" autocomplete="current-password" required>
+                <button type="submit" class="login-btn" id="loginBtn">Sign In</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Main Content -->
-    <div class="relative z-10 min-h-screen flex flex-col px-8 py-6" style="min-width: 1280px;">
+    <div class="relative z-10 min-h-screen flex-col px-8 py-6 app-container" id="appContainer" style="min-width: 1280px;">
 
         <!-- Header -->
         <header class="flex items-center justify-between mb-6 card-animate">
@@ -381,9 +515,12 @@
                 <h1 class="text-2xl font-semibold tracking-tight text-primary">Agent OS</h1>
                 <span class="text-secondary text-sm font-medium" style="opacity: 0.4;">v0.1</span>
             </div>
-            <div class="flex items-center gap-3">
-                <div class="w-2 h-2 rounded-full" style="background: #34D399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);"></div>
-                <span class="text-secondary text-sm">System Online</span>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full" style="background: #34D399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);"></div>
+                    <span class="text-secondary text-sm">System Online</span>
+                </div>
+                <button onclick="signOut()" class="refresh-btn" style="font-size:12px;padding:5px 12px;">Sign Out</button>
             </div>
         </header>
 
@@ -425,7 +562,69 @@
     </div>
 
     <script>
-        // ── Tab Switching (runs first, no dependencies) ─
+        // ── Auth Logic (runs first) ─────────────────────
+        const loginOverlay = document.getElementById('loginOverlay');
+        const appContainer = document.getElementById('appContainer');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const loginBtn = document.getElementById('loginBtn');
+
+        function showApp() {
+            loginOverlay.classList.add('hidden');
+            appContainer.classList.add('visible');
+        }
+
+        function showLogin() {
+            loginOverlay.classList.remove('hidden');
+            appContainer.classList.remove('visible');
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginError.classList.remove('visible');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in…';
+
+            try {
+                const sb = getSupabase();
+                if (!sb) throw new Error('Supabase not loaded');
+
+                const { error } = await sb.auth.signInWithPassword({
+                    email: document.getElementById('loginEmail').value,
+                    password: document.getElementById('loginPassword').value,
+                });
+
+                if (error) throw error;
+                showApp();
+            } catch (err) {
+                loginError.textContent = err.message || 'Sign in failed';
+                loginError.classList.add('visible');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
+            }
+        });
+
+        async function signOut() {
+            const sb = getSupabase();
+            if (sb) await sb.auth.signOut();
+            showLogin();
+        }
+
+        // Check existing session on load
+        async function checkAuth() {
+            const sb = getSupabase();
+            if (!sb) { showLogin(); return; }
+
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                showApp();
+            } else {
+                showLogin();
+            }
+        }
+
+        // ── Tab Switching (runs immediately, no dependencies) ─
         (function initTabs() {
             const tabList = document.getElementById('tabList');
             const buttons = tabList.querySelectorAll('.tab-btn');
@@ -782,6 +981,9 @@
         }
 
         // Tab switching is initialized at the top of the script block.
+
+        // Check auth on load
+        checkAuth();
     </script>
 </body>
 </html>
