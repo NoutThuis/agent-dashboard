@@ -982,11 +982,14 @@
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col py-6 px-8 overflow-y-auto" style="min-height: 100vh;">
             <!-- Page Title -->
-            <div id="pageTitleBar" class="flex items-center gap-4 mb-8 card-animate" style="padding-left: 48px;">
-                <div id="pageTitleIcon" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(236,72,153,0.25));border:1px solid rgba(255,255,255,0.1);box-shadow:0 0 20px rgba(124,58,237,0.15),inset 0 1px 0 rgba(255,255,255,0.06);backdrop-filter:blur(20px);">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <div id="pageTitleBar" class="flex items-center mb-8 card-animate" style="padding: 0 48px; justify-content: space-between;">
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div id="pageTitleIcon" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(236,72,153,0.25));border:1px solid rgba(255,255,255,0.1);box-shadow:0 0 20px rgba(124,58,237,0.15),inset 0 1px 0 rgba(255,255,255,0.06);backdrop-filter:blur(20px);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                    </div>
+                    <h2 id="pageTitle" class="font-semibold tracking-tight text-primary" style="font-size: 28px;">Dashboard</h2>
                 </div>
-                <h2 id="pageTitle" class="font-semibold tracking-tight text-primary" style="font-size: 28px;">Dashboard</h2>
+                <div id="pageTitleActions"></div>
             </div>
             <!-- Tab Panels -->
             <main class="flex-1">
@@ -1114,6 +1117,10 @@
                 if (pageTitleIconEl && tabIcons[tabName]) {
                     pageTitleIconEl.innerHTML = tabIcons[tabName];
                 }
+                // Clear title-bar actions when switching away from a tab
+                const actionsEl = document.getElementById('pageTitleActions');
+                if (actionsEl) actionsEl.innerHTML = '';
+
                 if (tabName === 'agents') {
                     loadAgentsTab();
                 }
@@ -1271,19 +1278,13 @@
             ];
 
             return `
-                <div style="display:flex;align-items:center;gap:24px;margin-bottom:32px;" class="agent-card-stagger">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
                     ${stats.map(s => `
-                        <div class="glass-card" style="flex:1;padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(s.color, 0.18)};">
+                        <div class="glass-card" style="padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(s.color, 0.18)};">
                             <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">${s.label}</div>
                             <div style="font-size:28px;font-weight:600;color:rgba(255,255,255,0.9);">${s.value}</div>
                         </div>
                     `).join('')}
-                    <button class="refresh-btn" id="agentsRefreshBtn" onclick="refreshAgents()" style="flex-shrink:0;align-self:center;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                        Refresh
-                    </button>
                 </div>
             `;
         }
@@ -1436,6 +1437,19 @@
                 if (error) throw error;
 
                 const logs = data || [];
+
+                // Inject refresh button into the page title bar actions area
+                const actionsEl = document.getElementById('pageTitleActions');
+                if (actionsEl) {
+                    actionsEl.innerHTML = `
+                        <button class="refresh-btn" id="agentsRefreshBtn" onclick="refreshAgents()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    `;
+                }
 
                 container.innerHTML = `
                     ${renderStatsRow(logs)}
