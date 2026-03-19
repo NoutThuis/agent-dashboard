@@ -1418,6 +1418,11 @@
         const CAT_COLORS = { Design: '#EC4899', Architecture: '#7C3AED', Development: '#10B981', Review: '#06B6D4' };
         const PRI_COLORS = { Urgent: '#EF4444', High: '#F97316', Normal: '#3B82F6', Low: '#6B7280' };
         const TRACK_COLORS = { 'On Track': '#10B981', 'At Risk': '#F59E0B', 'Off Track': '#EF4444' };
+        const TASK_STATUS_META = {
+            todo: { title: 'To Do', color: '#3B82F6' },
+            in_progress: { title: 'Doing', color: '#F59E0B' },
+            done: { title: 'Done', color: '#10B981' },
+        };
 
         let tasksData = [];
         let tasksChart = null;
@@ -1506,6 +1511,20 @@
             });
         }
 
+        function getTaskCounts(tasks = tasksData) {
+            return {
+                todo: tasks.filter(t => t.status === 'todo').length,
+                in_progress: tasks.filter(t => t.status === 'in_progress').length,
+                done: tasks.filter(t => t.status === 'done').length,
+            };
+        }
+
+        function closeTaskMenus() {
+            document.querySelectorAll('.kanban-dropdown').forEach(d => {
+                d.style.display = 'none';
+            });
+        }
+
         function renderTaskCard(task) {
             const agentColor = AGENT_COLORS[task.agent_name] || '#9CA3AF';
             const catColor = CAT_COLORS[task.category] || '#6B7280';
@@ -1588,15 +1607,12 @@
 
         function renderTasksBoard() {
             const tasks = filteredTasks();
-            const todo = tasks.filter(t => t.status === 'todo');
-            const doing = tasks.filter(t => t.status === 'in_progress');
-            const done = tasks.filter(t => t.status === 'done');
-
-            const columns = [
-                { title: 'To Do', status: 'todo', tasks: todo, color: '#3B82F6' },
-                { title: 'Doing', status: 'in_progress', tasks: doing, color: '#F59E0B' },
-                { title: 'Done', status: 'done', tasks: done, color: '#10B981' },
-            ];
+            const columns = Object.entries(TASK_STATUS_META).map(([status, meta]) => ({
+                title: meta.title,
+                status,
+                tasks: tasks.filter(task => task.status === status),
+                color: meta.color,
+            }));
 
             return `
                 <div class="kanban-board">
@@ -1620,9 +1636,10 @@
 
         function renderOverviewBar() {
             const total = tasksData.length;
-            const todoCount = tasksData.filter(t => t.status === 'todo').length;
-            const doingCount = tasksData.filter(t => t.status === 'in_progress').length;
-            const doneCount = tasksData.filter(t => t.status === 'done').length;
+            const counts = getTaskCounts();
+            const todoCount = counts.todo;
+            const doingCount = counts.in_progress;
+            const doneCount = counts.done;
             const donePercent = total > 0 ? Math.round((doneCount / total) * 100) : 0;
             const todoPercent = total > 0 ? Math.round((todoCount / total) * 100) : 0;
             const doingPercent = total > 0 ? Math.round((doingCount / total) * 100) : 0;
@@ -1697,9 +1714,10 @@
             if (!canvas) return;
             if (tasksChart) { tasksChart.destroy(); tasksChart = null; }
 
-            const todoCount = tasksData.filter(t => t.status === 'todo').length;
-            const doingCount = tasksData.filter(t => t.status === 'in_progress').length;
-            const doneCount = tasksData.filter(t => t.status === 'done').length;
+            const counts = getTaskCounts();
+            const todoCount = counts.todo;
+            const doingCount = counts.in_progress;
+            const doneCount = counts.done;
 
             tasksChart = new Chart(canvas, {
                 type: 'doughnut',
@@ -1851,16 +1869,16 @@
         // ── Three-dot menu ──────────────────────────────
         function toggleTaskMenu(e, taskId) {
             e.stopPropagation();
-            // Close all other menus
-            document.querySelectorAll('.kanban-dropdown').forEach(d => { if (d.id !== `task-menu-${taskId}`) d.style.display = 'none'; });
             const menu = document.getElementById(`task-menu-${taskId}`);
-            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            const shouldOpen = menu && menu.style.display === 'none';
+            closeTaskMenus();
+            if (menu && shouldOpen) menu.style.display = 'block';
         }
 
         // Close menus on outside click
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.kanban-menu-btn')) {
-                document.querySelectorAll('.kanban-dropdown').forEach(d => d.style.display = 'none');
+                closeTaskMenus();
             }
         });
 
@@ -1911,8 +1929,7 @@
 
         // ── Edit Modal ──────────────────────────────────
         function openEditModal(taskId) {
-            // Close dropdown
-            document.querySelectorAll('.kanban-dropdown').forEach(d => d.style.display = 'none');
+            closeTaskMenus();
 
             const task = tasksData.find(t => t.id === taskId);
             if (!task) return;
@@ -1990,7 +2007,7 @@
 
         // ── Delete Task ─────────────────────────────────
         async function deleteTask(taskId) {
-            document.querySelectorAll('.kanban-dropdown').forEach(d => d.style.display = 'none');
+            closeTaskMenus();
             if (!confirm('Delete this task?')) return;
 
             const previousTasks = [...tasksData];
