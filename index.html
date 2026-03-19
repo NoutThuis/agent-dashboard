@@ -1057,8 +1057,8 @@
                 <div class="mission-control-trigger">
                     <span style="font-size:16px;line-height:1;">🛰️</span>
                     <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.85);">Mission Control</span>
-                    <div class="mc-status-dot mc-status-idle"></div>
-                    <span style="font-size:11px;font-weight:500;color:rgba(52,211,153,0.8);">Idle</span>
+                    <div class="mc-status-dot mc-status-idle" id="mcTriggerDot"></div>
+                    <span style="font-size:11px;font-weight:500;color:rgba(52,211,153,0.8);" id="mcTriggerLabel">Idle</span>
                 </div>
                 <div class="mission-control-panel" id="mcPanel">
                     <!-- Section 1: Jarvis Agent Status -->
@@ -1068,32 +1068,32 @@
                             <span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);">Jarvis Agent Status</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-                            <div style="width:6px;height:6px;border-radius:50%;background:#34D399;box-shadow:0 0 6px rgba(52,211,153,0.5);"></div>
-                            <span style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);">Status: Idle</span>
+                            <div style="width:6px;height:6px;border-radius:50%;" id="mcStatusDot"></div>
+                            <span style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);" id="mcStatusText">Status: Loading…</span>
                         </div>
-                        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;">Current Activity: No activity today</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;" id="mcActivity">Current Activity: Loading…</div>
                         <div style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
                             <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);">Bandwidth Use</span>
-                            <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);">30% Interval</span>
+                            <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);" id="mcBandwidthLabel">—</span>
                         </div>
                         <div style="width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden;">
-                            <div style="width:30%;height:100%;border-radius:2px;background:linear-gradient(135deg,#7C3AED,#EC4899);"></div>
+                            <div style="width:0%;height:100%;border-radius:2px;background:linear-gradient(135deg,#7C3AED,#EC4899);transition:width 600ms ease;" id="mcBandwidthBar"></div>
                         </div>
                     </div>
                     <div class="mc-divider"></div>
                     <!-- Section 2: System Info -->
                     <div class="mc-section">
                         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
-                            <span style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.9);">44s</span>
-                            <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);">Next Check · 30s Interval</span>
+                            <span style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.9);" id="mcCountdown">—</span>
+                            <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);">Next Check · 30m Interval</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
                             <span style="font-size:12px;color:rgba(255,255,255,0.5);">Load:</span>
-                            <span style="font-size:12px;font-weight:600;color:#34D399;">Low</span>
+                            <span style="font-size:12px;font-weight:600;" id="mcLoad">—</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
-                            <div style="width:6px;height:6px;border-radius:50%;background:#34D399;box-shadow:0 0 6px rgba(52,211,153,0.5);"></div>
-                            <span style="font-size:12px;color:rgba(255,255,255,0.5);">Available for new tasks</span>
+                            <div style="width:6px;height:6px;border-radius:50%;" id="mcAvailDot"></div>
+                            <span style="font-size:12px;color:rgba(255,255,255,0.5);" id="mcAvailText">Loading…</span>
                         </div>
                     </div>
                     <div class="mc-divider"></div>
@@ -1189,17 +1189,158 @@
             });
         }
 
-        // ── Mission Control clock ──────────────────────
-        (function initMCClock() {
+        // ── Mission Control — Live Data ─────────────────
+        (function initMissionControl() {
+            const HEARTBEAT_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+            let mcLastFetch = null;
+            let mcInProgress = 0;
+            let mcLastActivity = null;
+            let mcBandwidthPct = 0;
+            let mcLastHeartbeat = null;
+
+            // Clock (runs every second)
             function updateMCTime() {
                 const el = document.getElementById('mcTime');
                 if (el) {
-                    const now = new Date();
-                    el.textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    el.textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 }
             }
-            updateMCTime();
             setInterval(updateMCTime, 1000);
+            updateMCTime();
+
+            // Countdown to next heartbeat check (runs every second)
+            function updateCountdown() {
+                const el = document.getElementById('mcCountdown');
+                if (!el) return;
+                if (!mcLastHeartbeat) { el.textContent = '—'; return; }
+                const nextCheck = new Date(mcLastHeartbeat).getTime() + HEARTBEAT_INTERVAL_MS;
+                const remaining = Math.max(0, Math.floor((nextCheck - Date.now()) / 1000));
+                if (remaining <= 0) { el.textContent = 'Now'; return; }
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                el.textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
+            }
+            setInterval(updateCountdown, 1000);
+
+            // Fetch real data from Supabase
+            async function fetchMCData() {
+                try {
+                    const sb = getSupabase();
+                    if (!sb) return;
+
+                    const todayISO = todayStart();
+
+                    // Parallel fetches
+                    const [tasksRes, logsRes] = await Promise.allSettled([
+                        sb.from('agent_tasks').select('status').eq('status', 'in_progress'),
+                        sb.from('agent_logs').select('agent_name, task_description, status, created_at').order('created_at', { ascending: false }).limit(50)
+                    ]);
+
+                    const inProgressTasks = (tasksRes.status === 'fulfilled' && !tasksRes.value.error)
+                        ? (tasksRes.value.data || []) : [];
+                    const logs = (logsRes.status === 'fulfilled' && !logsRes.value.error)
+                        ? (logsRes.value.data || []) : [];
+
+                    mcInProgress = inProgressTasks.length;
+                    const isActive = mcInProgress > 0;
+
+                    // Latest activity
+                    const latestLog = logs[0] || null;
+                    mcLastActivity = latestLog;
+
+                    // Bandwidth: % of today's logs that are completed
+                    const todayLogs = logs.filter(l => new Date(l.created_at) >= new Date(todayISO));
+                    const todayCompleted = todayLogs.filter(l => (l.status || '').toLowerCase() === 'completed').length;
+                    mcBandwidthPct = todayLogs.length > 0 ? Math.round((todayCompleted / todayLogs.length) * 100) : 0;
+
+                    // Last heartbeat: find most recent log that looks like a heartbeat/system check
+                    // Fallback: use latest log timestamp as proxy
+                    mcLastHeartbeat = latestLog ? latestLog.created_at : new Date().toISOString();
+
+                    mcLastFetch = new Date();
+
+                    // ── Update UI ──
+                    // Trigger dot + label
+                    const triggerDot = document.getElementById('mcTriggerDot');
+                    const triggerLabel = document.getElementById('mcTriggerLabel');
+                    if (triggerDot) {
+                        triggerDot.className = isActive ? 'mc-status-dot mc-status-active' : 'mc-status-dot mc-status-idle';
+                    }
+                    if (triggerLabel) {
+                        triggerLabel.textContent = isActive ? 'Active' : 'Idle';
+                        triggerLabel.style.color = isActive ? 'rgba(245,158,11,0.8)' : 'rgba(52,211,153,0.8)';
+                    }
+
+                    // Section 1: Status
+                    const statusDot = document.getElementById('mcStatusDot');
+                    const statusText = document.getElementById('mcStatusText');
+                    const activityEl = document.getElementById('mcActivity');
+                    if (statusDot) {
+                        statusDot.style.background = isActive ? '#F59E0B' : '#34D399';
+                        statusDot.style.boxShadow = isActive ? '0 0 6px rgba(245,158,11,0.5)' : '0 0 6px rgba(52,211,153,0.5)';
+                    }
+                    if (statusText) {
+                        statusText.textContent = isActive ? `Status: Active (${mcInProgress} task${mcInProgress > 1 ? 's' : ''})` : 'Status: Idle';
+                    }
+                    if (activityEl) {
+                        if (latestLog) {
+                            const desc = latestLog.task_description || 'Unknown task';
+                            const ago = relativeTime(latestLog.created_at);
+                            activityEl.textContent = `Latest: ${desc.length > 45 ? desc.slice(0,45) + '…' : desc} (${ago})`;
+                        } else {
+                            activityEl.textContent = 'Current Activity: No activity today';
+                        }
+                    }
+
+                    // Bandwidth bar
+                    const bwBar = document.getElementById('mcBandwidthBar');
+                    const bwLabel = document.getElementById('mcBandwidthLabel');
+                    if (bwBar) bwBar.style.width = mcBandwidthPct + '%';
+                    if (bwLabel) bwLabel.textContent = todayLogs.length > 0 ? `${mcBandwidthPct}% completed` : 'No tasks today';
+
+                    // Section 2: Load + Availability
+                    const loadEl = document.getElementById('mcLoad');
+                    const availDot = document.getElementById('mcAvailDot');
+                    const availText = document.getElementById('mcAvailText');
+
+                    let loadLevel, loadColor;
+                    if (mcInProgress === 0) { loadLevel = 'Low'; loadColor = '#34D399'; }
+                    else if (mcInProgress <= 2) { loadLevel = 'Medium'; loadColor = '#F59E0B'; }
+                    else { loadLevel = 'High'; loadColor = '#EF4444'; }
+
+                    if (loadEl) { loadEl.textContent = loadLevel; loadEl.style.color = loadColor; }
+                    if (availDot) {
+                        const avail = mcInProgress < 4;
+                        availDot.style.background = avail ? '#34D399' : '#EF4444';
+                        availDot.style.boxShadow = avail ? '0 0 6px rgba(52,211,153,0.5)' : '0 0 6px rgba(239,68,68,0.5)';
+                    }
+                    if (availText) {
+                        availText.textContent = mcInProgress < 4 ? 'Available for new tasks' : 'All agents busy';
+                    }
+
+                    // Section 3: Heartbeat line
+                    const hbEl = document.getElementById('mcHeartbeat');
+                    if (hbEl) {
+                        const timeEl = document.getElementById('mcTime');
+                        const timeStr = timeEl ? timeEl.textContent : '';
+                        const eventCount = todayLogs.length;
+                        hbEl.innerHTML = `HEARTBEAT_OK · ${eventCount} event${eventCount !== 1 ? 's' : ''} today · <span id="mcTime">${timeStr}</span>`;
+                    }
+
+                } catch (e) {
+                    console.warn('Mission Control fetch error:', e);
+                }
+            }
+
+            // Initial fetch + refresh every 30 seconds
+            // Wait for Supabase to be ready (login may not have happened yet)
+            function startMC() {
+                fetchMCData();
+                setInterval(fetchMCData, 30000);
+            }
+
+            // Delay first fetch slightly to allow auth to complete
+            setTimeout(startMC, 2000);
         })();
 
         function showLogin() {
