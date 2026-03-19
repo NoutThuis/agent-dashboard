@@ -964,6 +964,8 @@
 
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col py-6 px-8 overflow-y-auto" style="min-height: 100vh;">
+            <!-- Page Title -->
+            <h2 id="pageTitle" class="text-2xl font-semibold tracking-tight text-primary mb-6 card-animate">Dashboard</h2>
             <!-- Tab Panels -->
             <main class="flex-1">
                 <div id="panel-dashboard" class="tab-panel active">
@@ -1066,12 +1068,18 @@
             const buttons = tabList.querySelectorAll('.tab-btn');
             const panels = document.querySelectorAll('.tab-panel');
 
+            const pageTitleEl = document.getElementById('pageTitle');
+            const tabTitles = { dashboard: 'Dashboard', content: 'Content', tasks: 'Tasks', settings: 'Settings', agents: 'Agents' };
+
             function switchTab(tabName) {
                 buttons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
                 panels.forEach(panel => panel.classList.remove('active'));
                 const target = document.getElementById(`panel-${tabName}`);
                 if (target) {
                     requestAnimationFrame(() => target.classList.add('active'));
+                }
+                if (pageTitleEl) {
+                    pageTitleEl.textContent = tabTitles[tabName] || tabName.charAt(0).toUpperCase() + tabName.slice(1);
                 }
                 if (tabName === 'agents') {
                     loadAgentsTab();
