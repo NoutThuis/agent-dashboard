@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent OS</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        /* ── Reset & Base ─────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #0A0F1E 0%, #0F172A 100%);
+            min-height: 100vh;
+            min-width: 1280px;
+            overflow-x: auto;
+            color: rgba(255, 255, 255, 0.9);
+            position: relative;
+        }
+
+        /* ── Ambient Light Blobs ──────────────────────── */
+        .ambient-layer {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            will-change: transform;
+        }
+
+        .blob-1 {
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.14) 0%, transparent 70%);
+            top: -15%;
+            left: -10%;
+            animation: drift-1 68s ease-in-out infinite;
+        }
+
+        .blob-2 {
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+            top: 40%;
+            right: -8%;
+            animation: drift-2 74s ease-in-out infinite;
+        }
+
+        .blob-3 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.10) 0%, transparent 70%);
+            bottom: -10%;
+            left: 30%;
+            animation: drift-3 80s ease-in-out infinite;
+        }
+
+        @keyframes drift-1 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(60px, 40px); }
+            50% { transform: translate(20px, 80px); }
+            75% { transform: translate(-40px, 30px); }
+        }
+
+        @keyframes drift-2 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-50px, -30px); }
+            50% { transform: translate(-80px, 20px); }
+            75% { transform: translate(-20px, -50px); }
+        }
+
+        @keyframes drift-3 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(40px, -40px); }
+            50% { transform: translate(-30px, -60px); }
+            75% { transform: translate(50px, -20px); }
+        }
+
+        /* ── Glass Card System ────────────────────────── */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(40px) saturate(1.8);
+            -webkit-backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+            transition: background 300ms ease, border-color 300ms ease;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 30%, rgba(255, 255, 255, 0.15) 70%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        /* ── Navigation Bar (higher opacity glass) ───── */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(40px) saturate(1.8);
+            -webkit-backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            box-shadow:
+                0 4px 24px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+            position: relative;
+        }
+
+        .glass-nav::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.12) 20%, rgba(255, 255, 255, 0.12) 80%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* ── Tab Navigation ──────────────────────────── */
+        .tab-list {
+            display: flex;
+            gap: 4px;
+            position: relative;
+            padding: 4px;
+        }
+
+        .tab-btn {
+            position: relative;
+            z-index: 2;
+            padding: 10px 24px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.5);
+            background: transparent;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: color 300ms ease;
+            white-space: nowrap;
+            user-select: none;
+            pointer-events: auto;
+        }
+
+        .tab-btn:hover {
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .tab-btn.active {
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .tab-indicator {
+            position: absolute;
+            top: 4px;
+            left: 0;
+            height: calc(100% - 8px);
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.8), rgba(236, 72, 153, 0.8));
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.25), 0 0 40px rgba(236, 72, 153, 0.15);
+            transition: transform 300ms ease, width 300ms ease;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ── Tab Content ─────────────────────────────── */
+        .tab-panel {
+            opacity: 0;
+            display: none;
+            animation: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+            animation: tab-fade-in 200ms ease forwards;
+        }
+
+        @keyframes tab-fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ── Staggered Card Entrance ─────────────────── */
+        @keyframes card-enter {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-animate {
+            opacity: 0;
+            animation: card-enter 400ms ease forwards;
+        }
+
+        .card-animate:nth-child(1) { animation-delay: 0ms; }
+        .card-animate:nth-child(2) { animation-delay: 100ms; }
+        .card-animate:nth-child(3) { animation-delay: 200ms; }
+        .card-animate:nth-child(4) { animation-delay: 300ms; }
+        .card-animate:nth-child(5) { animation-delay: 400ms; }
+        .card-animate:nth-child(6) { animation-delay: 500ms; }
+
+        /* ── Utility ─────────────────────────────────── */
+        .text-primary { color: rgba(255, 255, 255, 0.9); }
+        .text-secondary { color: rgba(255, 255, 255, 0.5); }
+
+        .accent-glow-purple {
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.15);
+        }
+
+        .accent-glow-cyan {
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.15);
+        }
+
+        .accent-glow-amber {
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #7C3AED, #EC4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ── Agents Tab Styles ────────────────────────── */
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .skeleton-pulse {
+            background: linear-gradient(
+                110deg,
+                rgba(255, 255, 255, 0.03) 0%,
+                rgba(255, 255, 255, 0.06) 40%,
+                rgba(255, 255, 255, 0.03) 60%,
+                rgba(255, 255, 255, 0.06) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.8s ease-in-out infinite;
+            border-radius: 12px;
+        }
+
+        .agent-card-stagger > :nth-child(1) { opacity: 0; animation: card-enter 400ms ease forwards; animation-delay: 0ms; }
+        .agent-card-stagger > :nth-child(2) { opacity: 0; animation: card-enter 400ms ease forwards; animation-delay: 100ms; }
+        .agent-card-stagger > :nth-child(3) { opacity: 0; animation: card-enter 400ms ease forwards; animation-delay: 200ms; }
+        .agent-card-stagger > :nth-child(4) { opacity: 0; animation: card-enter 400ms ease forwards; animation-delay: 300ms; }
+
+        .activity-feed-scroll {
+            max-height: 480px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .activity-feed-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .activity-feed-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+        }
+
+        .activity-row {
+            transition: background 200ms ease;
+        }
+
+        .activity-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 6px 14px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 200ms ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .refresh-btn svg {
+            transition: transform 400ms ease;
+        }
+
+        .refresh-btn.spinning svg {
+            transform: rotate(360deg);
+        }
+
+        .error-banner {
+            background: rgba(239, 68, 68, 0.08);
+            backdrop-filter: blur(40px) saturate(1.8);
+            -webkit-backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 14px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body class="font-inter antialiased">
+
+    <!-- Ambient Light Layer -->
+    <div class="ambient-layer">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10 min-h-screen flex flex-col px-8 py-6" style="min-width: 1280px;">
+
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-6 card-animate">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-semibold tracking-tight text-primary">Agent OS</h1>
+                <span class="text-secondary text-sm font-medium" style="opacity: 0.4;">v0.1</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full" style="background: #34D399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);"></div>
+                <span class="text-secondary text-sm">System Online</span>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="glass-nav mb-8 card-animate" style="animation-delay: 100ms;">
+            <div class="tab-list" id="tabList">
+                <div class="tab-indicator" id="tabIndicator"></div>
+                <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+                <button class="tab-btn" data-tab="content">Content</button>
+                <button class="tab-btn" data-tab="tasks">Tasks</button>
+                <button class="tab-btn" data-tab="settings">Settings</button>
+                <button class="tab-btn" data-tab="agents">Agents</button>
+            </div>
+        </nav>
+
+        <!-- Tab Panels -->
+        <main class="flex-1">
+            <div id="panel-dashboard" class="tab-panel active">
+                <!-- Dashboard content will go here -->
+            </div>
+
+            <div id="panel-content" class="tab-panel">
+                <!-- Content tab will go here -->
+            </div>
+
+            <div id="panel-tasks" class="tab-panel">
+                <!-- Tasks tab will go here -->
+            </div>
+
+            <div id="panel-settings" class="tab-panel">
+                <!-- Settings tab will go here -->
+            </div>
+
+            <div id="panel-agents" class="tab-panel">
+                <!-- Agents tab — populated by JS -->
+                <div id="agents-container"></div>
+            </div>
+        </main>
+
+    </div>
+
+    <script>
+        // ── Supabase Configuration ──────────────────────
+        // IMPORTANT: This dashboard uses the anon key, NOT the service role key.
+        // The service role key must never be placed in frontend code.
+        // Use RLS policies on your Supabase tables to control access.
+        const SUPABASE_CONFIG = {
+            url: 'https://cjbgdqsymsuptiohguvn.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqYmdkcXN5bXN1cHRpb2hndXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3Njc4MTksImV4cCI6MjA4OTM0MzgxOX0.Ua8owBFt8WOclVqwIpoYVSYvH2EvaeVDW7ojL-0DGng',
+        };
+
+        const supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+
+        // ── Agent Definitions ───────────────────────────
+        const AGENTS = [
+            { name: 'Mira', emoji: '🎨', role: 'Frontend Designer', glow: '#3B82F6' },
+            { name: 'Ari',  emoji: '🏗️', role: 'Frontend Architect', glow: '#7C3AED' },
+            { name: 'Noah', emoji: '⚡', role: 'Frontend Builder', glow: '#F59E0B' },
+            { name: 'Lena', emoji: '🔍', role: 'Frontend Reviewer', glow: '#10B981' },
+        ];
+
+        // ── Helpers ─────────────────────────────────────
+        function todayStart() {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            return d.toISOString();
+        }
+
+        function weekStart() {
+            const d = new Date();
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+            const mon = new Date(d);
+            mon.setDate(diff);
+            mon.setHours(0, 0, 0, 0);
+            return mon.toISOString();
+        }
+
+        function relativeTime(dateStr) {
+            if (!dateStr) return 'Never';
+            const now = Date.now();
+            const then = new Date(dateStr).getTime();
+            const diff = now - then;
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return `${mins} min ago`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        function truncate(str, len) {
+            if (!str) return '';
+            return str.length > len ? str.slice(0, len) + '…' : str;
+        }
+
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function statusColor(status) {
+            if (!status) return { bg: 'rgba(255,255,255,0.06)', text: 'rgba(255,255,255,0.5)' };
+            const s = status.toLowerCase();
+            if (s === 'completed') return { bg: 'rgba(16, 185, 129, 0.12)', text: '#34D399' };
+            if (s === 'failed') return { bg: 'rgba(239, 68, 68, 0.12)', text: '#F87171' };
+            if (s === 'running' || s === 'in_progress') return { bg: 'rgba(6, 182, 212, 0.12)', text: '#22D3EE' };
+            return { bg: 'rgba(245, 158, 11, 0.12)', text: '#FBBF24' };
+        }
+
+        function agentColor(agentName) {
+            const a = AGENTS.find(a => a.name.toLowerCase() === (agentName || '').toLowerCase());
+            return a ? a.glow : '#6B7280';
+        }
+
+        // ── Skeleton Loading ────────────────────────────
+        function renderSkeleton() {
+            return `
+                <div style="display:flex;gap:16px;margin-bottom:24px;" class="agent-card-stagger">
+                    ${[1,2,3,4].map(() => `<div class="skeleton-pulse" style="flex:1;height:80px;"></div>`).join('')}
+                </div>
+                <div style="display:flex;gap:16px;margin-bottom:24px;" class="agent-card-stagger">
+                    ${[1,2,3,4].map(() => `<div class="skeleton-pulse" style="flex:1;height:220px;"></div>`).join('')}
+                </div>
+                <div style="display:flex;gap:16px;">
+                    <div class="skeleton-pulse" style="flex:0.65;height:320px;"></div>
+                    <div class="skeleton-pulse" style="flex:0.35;height:320px;"></div>
+                </div>
+            `;
+        }
+
+        // ── Error Banner ────────────────────────────────
+        function renderError() {
+            return `
+                <div class="error-banner">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <span style="color:rgba(248,113,113,0.9);font-size:14px;font-weight:500;">Unable to connect to database</span>
+                    </div>
+                    <button onclick="loadAgentsTab()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:6px 14px;color:#F87171;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Retry</button>
+                </div>
+            `;
+        }
+
+        // ── Render Functions ────────────────────────────
+        function renderStatsRow(logs) {
+            const todayStr = todayStart();
+            const weekStr = weekStart();
+            const todayLogs = logs.filter(l => new Date(l.created_at) >= new Date(todayStr));
+            const weekLogs = logs.filter(l => new Date(l.created_at) >= new Date(weekStr));
+
+            const totalToday = todayLogs.length;
+            const totalWeek = weekLogs.length;
+
+            // Most active agent this week
+            const agentCounts = {};
+            weekLogs.forEach(l => { agentCounts[l.agent_name] = (agentCounts[l.agent_name] || 0) + 1; });
+            const mostActive = Object.entries(agentCounts).sort((a, b) => b[1] - a[1])[0];
+            const mostActiveName = mostActive ? mostActive[0] : 'N/A';
+
+            // Success rate this week
+            const completedWeek = weekLogs.filter(l => (l.status || '').toLowerCase() === 'completed').length;
+            const successRate = totalWeek > 0 ? Math.round((completedWeek / totalWeek) * 100) : 0;
+
+            const stats = [
+                { label: 'Tasks Today', value: totalToday, color: '#06B6D4' },
+                { label: 'Tasks This Week', value: totalWeek, color: '#7C3AED' },
+                { label: 'Most Active Agent', value: mostActiveName, color: '#EC4899' },
+                { label: 'Success Rate', value: totalWeek > 0 ? successRate + '%' : 'N/A', color: '#10B981' },
+            ];
+
+            return `
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" class="agent-card-stagger">
+                    ${stats.map(s => `
+                        <div class="glass-card" style="padding:20px 24px;box-shadow:0 8px 32px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.05),inset 0 1px 0 0 rgba(255,255,255,0.05),0 0 30px ${hexToRgba(s.color, 0.08)};">
+                            <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">${s.label}</div>
+                            <div style="font-size:28px;font-weight:600;color:rgba(255,255,255,0.9);">${s.value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderAgentCards(logs) {
+            const todayStr = todayStart();
+
+            return `
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" class="agent-card-stagger">
+                    ${AGENTS.map(agent => {
+                        const agentLogs = logs.filter(l => (l.agent_name || '').toLowerCase() === agent.name.toLowerCase());
+                        const todayLogs = agentLogs.filter(l => new Date(l.created_at) >= new Date(todayStr));
+                        const latest = agentLogs[0] || null; // already sorted desc
+
+                        return `
+                            <div class="glass-card" style="padding:24px;box-shadow:0 8px 32px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.05),inset 0 1px 0 0 rgba(255,255,255,0.05),0 0 30px ${hexToRgba(agent.glow, 0.15)};border-top:2px solid ${hexToRgba(agent.glow, 0.3)};">
+                                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                                    <span style="font-size:28px;">${agent.emoji}</span>
+                                    <div>
+                                        <div style="font-size:16px;font-weight:600;color:rgba(255,255,255,0.9);">${agent.name}</div>
+                                        <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.4);">${agent.role}</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:10px;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span style="font-size:12px;color:rgba(255,255,255,0.4);">Status</span>
+                                        <div style="display:flex;align-items:center;gap:6px;">
+                                            <div style="width:6px;height:6px;border-radius:50%;background:#34D399;box-shadow:0 0 6px rgba(52,211,153,0.5);"></div>
+                                            <span style="font-size:12px;font-weight:500;color:#34D399;">Connected</span>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span style="font-size:12px;color:rgba(255,255,255,0.4);">Model</span>
+                                        <span style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);">${latest ? truncate(latest.model_used || 'N/A', 28) : 'N/A'}</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span style="font-size:12px;color:rgba(255,255,255,0.4);">Last task</span>
+                                        <span style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);text-align:right;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${latest ? truncate(latest.task_description || 'N/A', 30) : 'No data yet'}</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span style="font-size:12px;color:rgba(255,255,255,0.4);">Last active</span>
+                                        <span style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);">${relativeTime(latest?.created_at)}</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span style="font-size:12px;color:rgba(255,255,255,0.4);">Tasks today</span>
+                                        <span style="font-size:13px;font-weight:600;color:${agent.glow};">${todayLogs.length}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function renderBottomRow(logs) {
+            const todayStr = todayStart();
+            const recent = logs.slice(0, 50);
+
+            // Activity Feed
+            const feedRows = recent.map(log => {
+                const color = agentColor(log.agent_name);
+                const sc = statusColor(log.status);
+                return `
+                    <div class="activity-row" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-left:2px solid ${hexToRgba(color, 0.3)};border-radius:0 8px 8px 0;">
+                        <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;box-shadow:0 0 8px ${hexToRgba(color, 0.4)};"></div>
+                        <span style="font-size:12px;font-weight:600;color:${color};min-width:40px;">${log.agent_name || 'Unknown'}</span>
+                        <span style="font-size:11px;color:rgba(255,255,255,0.35);min-width:72px;flex-shrink:0;">${relativeTime(log.created_at)}</span>
+                        <span style="font-size:12px;color:rgba(255,255,255,0.7);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${truncate(log.task_description || '', 60)}</span>
+                        <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.05);padding:3px 8px;border-radius:6px;flex-shrink:0;">${truncate(log.model_used || '', 20)}</span>
+                        <span style="font-size:11px;font-weight:500;color:${sc.text};background:${sc.bg};padding:3px 10px;border-radius:6px;flex-shrink:0;">${log.status || 'unknown'}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Model Usage Tracker
+            const todayLogs = logs.filter(l => new Date(l.created_at) >= new Date(todayStr));
+            const modelRows = AGENTS.map(agent => {
+                const agentToday = todayLogs.filter(l => (l.agent_name || '').toLowerCase() === agent.name.toLowerCase());
+                // Most used model today
+                const modelCounts = {};
+                agentToday.forEach(l => { if (l.model_used) modelCounts[l.model_used] = (modelCounts[l.model_used] || 0) + 1; });
+                const topModel = Object.entries(modelCounts).sort((a, b) => b[1] - a[1])[0];
+                return `
+                    <tr>
+                        <td style="padding:10px 14px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);">
+                            <span style="display:inline-flex;align-items:center;gap:8px;">
+                                <span style="width:8px;height:8px;border-radius:50%;background:${agent.glow};display:inline-block;"></span>
+                                ${agent.name}
+                            </span>
+                        </td>
+                        <td style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,0.5);">${topModel ? truncate(topModel[0], 24) : 'N/A'}</td>
+                        <td style="padding:10px 14px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);text-align:right;">${agentToday.length}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div style="display:flex;gap:16px;" class="agent-card-stagger">
+                    <!-- Activity Feed -->
+                    <div class="glass-card" style="flex:0.65;padding:0;overflow:hidden;">
+                        <div style="padding:18px 24px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.8);">Recent Activity</span>
+                            <span style="font-size:11px;color:rgba(255,255,255,0.3);">${recent.length} entries</span>
+                        </div>
+                        <div class="activity-feed-scroll" style="padding:8px 12px;">
+                            ${feedRows.length > 0 ? feedRows : '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">No activity yet</div>'}
+                        </div>
+                        <div style="position:sticky;bottom:0;height:32px;background:linear-gradient(transparent, rgba(10,15,30,0.6));pointer-events:none;"></div>
+                    </div>
+
+                    <!-- Model Usage -->
+                    <div class="glass-card" style="flex:0.35;padding:0;overflow:hidden;">
+                        <div style="padding:18px 24px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                            <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.8);">Model Usage</span>
+                        </div>
+                        <div style="padding:4px 0;">
+                            <table style="width:100%;border-collapse:collapse;">
+                                <thead>
+                                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                        <th style="padding:10px 14px;font-size:11px;font-weight:500;color:rgba(255,255,255,0.3);text-align:left;text-transform:uppercase;letter-spacing:0.05em;">Agent</th>
+                                        <th style="padding:10px 14px;font-size:11px;font-weight:500;color:rgba(255,255,255,0.3);text-align:left;text-transform:uppercase;letter-spacing:0.05em;">Model</th>
+                                        <th style="padding:10px 14px;font-size:11px;font-weight:500;color:rgba(255,255,255,0.3);text-align:right;text-transform:uppercase;letter-spacing:0.05em;">Tasks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${modelRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── Main Data Loader ────────────────────────────
+        async function loadAgentsTab() {
+            const container = document.getElementById('agents-container');
+            container.innerHTML = renderSkeleton();
+
+            try {
+                const { data, error } = await supabase
+                    .from('agent_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(500);
+
+                if (error) throw error;
+
+                const logs = data || [];
+
+                container.innerHTML = `
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                        <div></div>
+                        <button class="refresh-btn" id="agentsRefreshBtn" onclick="refreshAgents()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    ${renderStatsRow(logs)}
+                    ${renderAgentCards(logs)}
+                    ${renderBottomRow(logs)}
+                `;
+            } catch (err) {
+                console.error('Supabase fetch failed:', err);
+                container.innerHTML = renderError() + renderSkeleton();
+            }
+        }
+
+        async function refreshAgents() {
+            const btn = document.getElementById('agentsRefreshBtn');
+            if (btn) {
+                btn.classList.add('spinning');
+                setTimeout(() => btn.classList.remove('spinning'), 500);
+            }
+            await loadAgentsTab();
+        }
+
+        // ── Tab Switching ───────────────────────────────
+        const tabList = document.getElementById('tabList');
+        const indicator = document.getElementById('tabIndicator');
+        const buttons = tabList.querySelectorAll('.tab-btn');
+        const panels = document.querySelectorAll('.tab-panel');
+
+        function switchTab(tabName) {
+            buttons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
+
+            panels.forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            const target = document.getElementById(`panel-${tabName}`);
+            if (target) {
+                requestAnimationFrame(() => {
+                    target.classList.add('active');
+                });
+            }
+
+            moveIndicator(tabName);
+
+            // Load agents data on tab activation
+            if (tabName === 'agents') {
+                loadAgentsTab();
+            }
+        }
+
+        function moveIndicator(tabName) {
+            const activeBtn = tabList.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+            if (!activeBtn) return;
+
+            const listRect = tabList.getBoundingClientRect();
+            const btnRect = activeBtn.getBoundingClientRect();
+
+            indicator.style.width = `${btnRect.width}px`;
+            indicator.style.transform = `translateX(${btnRect.left - listRect.left}px)`;
+        }
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        });
+
+        window.addEventListener('load', () => {
+            moveIndicator('dashboard');
+        });
+
+        window.addEventListener('resize', () => {
+            const active = tabList.querySelector('.tab-btn.active');
+            if (active) moveIndicator(active.dataset.tab);
+        });
+    </script>
+</body>
+</html>
