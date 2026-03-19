@@ -1050,7 +1050,7 @@
     <div class="relative z-10 min-h-screen flex app-container" id="appContainer" style="min-width: 1280px;">
 
         <!-- Sidebar -->
-        <aside class="flex flex-col py-6 px-4 card-animate" style="width: 220px; min-width: 220px; position: sticky; top: 0; height: 100vh;">
+        <aside class="flex flex-col py-6 px-4 card-animate" style="width: 220px; min-width: 220px; position: sticky; top: 0; height: 100vh; overflow: visible; z-index: 200;">
             <!-- Mission Control Widget -->
             <!-- TODO Phase 3: Connect Mission Control to real system status data -->
             <div class="mission-control-wrapper" id="missionControl">
@@ -1128,7 +1128,7 @@
         </aside>
 
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col py-6 px-8 overflow-y-auto" style="min-height: 100vh;">
+        <div class="flex-1 flex flex-col py-6 px-8 overflow-y-auto" style="min-height: 100vh; position: relative; z-index: 1;">
             <!-- Page Title -->
             <div id="pageTitleBar" class="flex items-center mb-8 card-animate" style="padding: 0 48px; justify-content: space-between;">
                 <div style="display:flex;align-items:center;gap:16px;">
