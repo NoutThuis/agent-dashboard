@@ -160,13 +160,11 @@
         .tab-list {
             display: flex;
             gap: 4px;
-            position: relative;
             padding: 4px;
         }
 
         .tab-btn {
             position: relative;
-            z-index: 2;
             padding: 10px 24px;
             font-family: 'Inter', sans-serif;
             font-size: 14px;
@@ -176,31 +174,20 @@
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            transition: color 300ms ease;
+            transition: color 300ms ease, background 300ms ease, box-shadow 300ms ease;
             white-space: nowrap;
             user-select: none;
-            pointer-events: auto;
         }
 
         .tab-btn:hover {
             color: rgba(255, 255, 255, 0.75);
+            background: rgba(255, 255, 255, 0.04);
         }
 
         .tab-btn.active {
             color: rgba(255, 255, 255, 0.95);
-        }
-
-        .tab-indicator {
-            position: absolute;
-            top: 4px;
-            left: 0;
-            height: calc(100% - 8px);
-            border-radius: 12px;
             background: linear-gradient(135deg, rgba(124, 58, 237, 0.8), rgba(236, 72, 153, 0.8));
             box-shadow: 0 0 20px rgba(124, 58, 237, 0.25), 0 0 40px rgba(236, 72, 153, 0.15);
-            transition: transform 300ms ease, width 300ms ease;
-            z-index: 1;
-            pointer-events: none;
         }
 
         /* ── Tab Content ─────────────────────────────── */
@@ -401,7 +388,6 @@
         <!-- Navigation -->
         <nav class="glass-nav mb-8 card-animate" style="animation-delay: 100ms;">
             <div class="tab-list" id="tabList">
-                <div class="tab-indicator" id="tabIndicator"></div>
                 <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
                 <button class="tab-btn" data-tab="content">Content</button>
                 <button class="tab-btn" data-tab="tasks">Tasks</button>
@@ -761,7 +747,6 @@
 
         // ── Tab Switching ───────────────────────────────
         const tabList = document.getElementById('tabList');
-        const indicator = document.getElementById('tabIndicator');
         const buttons = tabList.querySelectorAll('.tab-btn');
         const panels = document.querySelectorAll('.tab-panel');
 
@@ -779,36 +764,14 @@
                 });
             }
 
-            moveIndicator(tabName);
-
             // Load agents data on tab activation
             if (tabName === 'agents') {
                 loadAgentsTab();
             }
         }
 
-        function moveIndicator(tabName) {
-            const activeBtn = tabList.querySelector(`.tab-btn[data-tab="${tabName}"]`);
-            if (!activeBtn) return;
-
-            const listRect = tabList.getBoundingClientRect();
-            const btnRect = activeBtn.getBoundingClientRect();
-
-            indicator.style.width = `${btnRect.width}px`;
-            indicator.style.transform = `translateX(${btnRect.left - listRect.left}px)`;
-        }
-
         buttons.forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-        });
-
-        window.addEventListener('load', () => {
-            moveIndicator('dashboard');
-        });
-
-        window.addEventListener('resize', () => {
-            const active = tabList.querySelector('.tab-btn.active');
-            if (active) moveIndicator(active.dataset.tab);
         });
     </script>
 </body>
