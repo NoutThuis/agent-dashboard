@@ -555,7 +555,7 @@
 
             <div id="panel-agents" class="tab-panel">
                 <!-- Agents tab — populated by JS -->
-                <div id="agents-container"></div>
+                <div id="agents-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
             </div>
         </main>
 
@@ -791,9 +791,9 @@
             ];
 
             return `
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" class="agent-card-stagger">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
                     ${stats.map(s => `
-                        <div class="glass-card" style="padding:20px 24px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(s.color, 0.18)};">
+                        <div class="glass-card" style="padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(s.color, 0.18)};">
                             <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">${s.label}</div>
                             <div style="font-size:28px;font-weight:600;color:rgba(255,255,255,0.9);">${s.value}</div>
                         </div>
@@ -806,14 +806,14 @@
             const todayStr = todayStart();
 
             return `
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" class="agent-card-stagger">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
                     ${AGENTS.map(agent => {
                         const agentLogs = logs.filter(l => (l.agent_name || '').toLowerCase() === agent.name.toLowerCase());
                         const todayLogs = agentLogs.filter(l => new Date(l.created_at) >= new Date(todayStr));
                         const latest = agentLogs[0] || null; // already sorted desc
 
                         return `
-                            <div class="glass-card" style="padding:24px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px ${hexToRgba(agent.glow, 0.22)};border-top:2px solid ${hexToRgba(agent.glow, 0.35)};">
+                            <div class="glass-card" style="padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px ${hexToRgba(agent.glow, 0.22)};border-top:2px solid ${hexToRgba(agent.glow, 0.35)};">
                                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
                                     <span style="font-size:28px;">${agent.emoji}</span>
                                     <div>
@@ -896,7 +896,7 @@
             }).join('');
 
             return `
-                <div style="display:flex;gap:16px;" class="agent-card-stagger">
+                <div style="display:flex;gap:24px;" class="agent-card-stagger">
                     <!-- Activity Feed -->
                     <div class="glass-card" style="flex:0.65;padding:0;overflow:hidden;">
                         <div style="padding:18px 24px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
@@ -952,7 +952,7 @@
                 const logs = data || [];
 
                 container.innerHTML = `
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
                         <div></div>
                         <button class="refresh-btn" id="agentsRefreshBtn" onclick="refreshAgents()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
