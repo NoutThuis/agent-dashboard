@@ -143,6 +143,7 @@
                 0 0 0 1px rgba(255, 255, 255, 0.05),
                 inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
             position: relative;
+            isolation: isolate;
         }
 
         .glass-nav::before {
@@ -165,6 +166,7 @@
 
         .tab-btn {
             position: relative;
+            z-index: 10;
             padding: 10px 24px;
             font-family: 'Inter', sans-serif;
             font-size: 14px;
@@ -386,7 +388,7 @@
         </header>
 
         <!-- Navigation -->
-        <nav class="glass-nav mb-8 card-animate" style="animation-delay: 100ms;">
+        <nav class="glass-nav mb-8 card-animate" style="animation-delay: 100ms; position: relative; z-index: 20;">
             <div class="tab-list" id="tabList">
                 <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
                 <button class="tab-btn" data-tab="content">Content</button>
