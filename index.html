@@ -1142,7 +1142,7 @@
             <!-- Tab Panels -->
             <main class="flex-1">
                 <div id="panel-dashboard" class="tab-panel active">
-                    <!-- Dashboard content will go here -->
+                    <div id="dashboard-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
                 </div>
 
                 <div id="panel-content" class="tab-panel">
@@ -1178,6 +1178,10 @@
             loginOverlay.classList.add('hidden');
             appContainer.classList.add('visible');
             requestAnimationFrame(() => {
+                const dashContainer = document.getElementById('dashboard-container');
+                if (dashContainer && !dashContainer.innerHTML.trim()) {
+                    loadDashboardTab();
+                }
                 const tasksContainer = document.getElementById('tasks-container');
                 if (tasksContainer && !tasksContainer.innerHTML.trim()) {
                     loadTasksTab();
@@ -1282,6 +1286,9 @@
                 const actionsEl = document.getElementById('pageTitleActions');
                 if (actionsEl) actionsEl.innerHTML = '';
 
+                if (tabName === 'dashboard') {
+                    loadDashboardTab();
+                }
                 if (tabName === 'agents') {
                     loadAgentsTab();
                 }
@@ -1579,6 +1586,261 @@
                     </div>
                 </div>
             `;
+        }
+
+        // ── Dashboard Tab ────────────────────────────────
+        function dashboardSkeleton() {
+            return `
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px;">
+                    ${[1,2,3,4].map(() => `<div class="skeleton-pulse" style="height:90px;border-radius:16px;"></div>`).join('')}
+                </div>
+                <div style="display:grid;grid-template-columns:3fr 2fr;gap:24px;margin-bottom:32px;">
+                    <div class="skeleton-pulse" style="height:420px;border-radius:20px;"></div>
+                    <div style="display:flex;flex-direction:column;gap:24px;">
+                        <div class="skeleton-pulse" style="height:180px;border-radius:20px;"></div>
+                        <div class="skeleton-pulse" style="height:200px;border-radius:20px;"></div>
+                    </div>
+                </div>
+                <div class="skeleton-pulse" style="height:240px;border-radius:20px;"></div>
+            `;
+        }
+
+        function dashStatusDot(status) {
+            const s = (status || '').toLowerCase();
+            if (s === 'completed') return { color: '#10B981', pulse: false, label: 'Completed' };
+            if (s === 'in_progress' || s === 'running') return { color: '#F59E0B', pulse: true, label: 'In Progress' };
+            if (s === 'failed') return { color: '#EF4444', pulse: false, label: 'Failed' };
+            return { color: '#6B7280', pulse: false, label: status || 'Unknown' };
+        }
+
+        async function loadDashboardTab() {
+            const container = document.getElementById('dashboard-container');
+            if (!container) return;
+            container.innerHTML = dashboardSkeleton();
+
+            let logs = [];
+            let tasks = [];
+            let logsError = false;
+            let tasksError = false;
+
+            try {
+                const sb = getSupabase();
+                if (!sb) throw new Error('Supabase not loaded');
+
+                const [logsRes, tasksRes] = await Promise.allSettled([
+                    sb.from('agent_logs').select('*').order('created_at', { ascending: false }).limit(500),
+                    sb.from('agent_tasks').select('*')
+                ]);
+
+                if (logsRes.status === 'fulfilled' && !logsRes.value.error) {
+                    logs = logsRes.value.data || [];
+                } else {
+                    logsError = true;
+                }
+
+                if (tasksRes.status === 'fulfilled' && !tasksRes.value.error) {
+                    tasks = tasksRes.value.data || [];
+                } else {
+                    tasksError = true;
+                }
+            } catch (e) {
+                logsError = true;
+                tasksError = true;
+            }
+
+            // Compute stats
+            const now = new Date();
+            const todayISO = todayStart();
+            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+            const inProgressCount = tasksError ? '—' : tasks.filter(t => (t.status || '').toLowerCase() === 'in_progress').length;
+
+            const recentAgents = logsError ? '—' : (() => {
+                const names = new Set();
+                logs.forEach(l => { if (new Date(l.created_at) >= new Date(yesterday)) names.add(l.agent_name); });
+                return names.size;
+            })();
+
+            const completedToday = logsError ? '—' : logs.filter(l => (l.status || '').toLowerCase() === 'completed' && new Date(l.created_at) >= new Date(todayISO)).length;
+
+            const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+            // ROW 1 — Status Overview Cards
+            const row1 = `
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
+                    <!-- TODO: Connect to real system status -->
+                    <div class="glass-card" style="padding:24px;border-top:2px solid #10B981;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <div style="width:8px;height:8px;border-radius:50%;background:#10B981;box-shadow:0 0 8px rgba(16,185,129,0.5);"></div>
+                            <span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.9);">All Systems Online</span>
+                        </div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.35);">Last checked: ${currentTime}</div>
+                    </div>
+                    <div class="glass-card" style="padding:24px;border-top:2px solid #F59E0B;">
+                        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:4px;">${inProgressCount}</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.4);">tasks in progress</div>
+                        ${tasksError ? '<div style="font-size:11px;color:#F87171;margin-top:6px;">Unable to load — <span onclick="loadDashboardTab()" style="cursor:pointer;text-decoration:underline;">Retry</span></div>' : ''}
+                    </div>
+                    <div class="glass-card" style="padding:24px;border-top:2px solid #7C3AED;">
+                        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:4px;">${recentAgents} <span style="font-size:16px;font-weight:400;color:rgba(255,255,255,0.35);">/ 4</span></div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.4);">agents active today</div>
+                        ${logsError ? '<div style="font-size:11px;color:#F87171;margin-top:6px;">Unable to load — <span onclick="loadDashboardTab()" style="cursor:pointer;text-decoration:underline;">Retry</span></div>' : ''}
+                    </div>
+                    <div class="glass-card" style="padding:24px;border-top:2px solid #06B6D4;">
+                        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:4px;">${completedToday}</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.4);">completed today</div>
+                        ${logsError ? '<div style="font-size:11px;color:#F87171;margin-top:6px;">Unable to load — <span onclick="loadDashboardTab()" style="cursor:pointer;text-decoration:underline;">Retry</span></div>' : ''}
+                    </div>
+                </div>
+            `;
+
+            // ROW 2 LEFT — Live Activity Feed
+            const recentLogs = logs.slice(0, 20);
+            const activityRows = logsError
+                ? `<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.35);font-size:13px;">Unable to load activity — <span onclick="loadDashboardTab()" style="cursor:pointer;text-decoration:underline;color:#F87171;">Retry</span></div>`
+                : recentLogs.length === 0
+                    ? `<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">No activity recorded yet</div>`
+                    : recentLogs.map(l => {
+                        const st = dashStatusDot(l.status);
+                        const ac = agentColor(l.agent_name);
+                        return `
+                            <div class="activity-row" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:10px;">
+                                <div style="width:8px;height:8px;border-radius:50%;background:${st.color};box-shadow:0 0 6px ${hexToRgba(st.color, 0.4)};flex-shrink:0;${st.pulse ? 'animation:mc-pulse-amber 2s ease-in-out infinite;' : ''}"></div>
+                                <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:${hexToRgba(st.color, 0.12)};color:${st.color};flex-shrink:0;">${st.label}</span>
+                                <span style="font-size:13px;font-weight:600;color:${ac};flex-shrink:0;">${l.agent_name || 'Unknown'}</span>
+                                <span style="font-size:13px;color:rgba(255,255,255,0.6);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${truncate(l.task_description || '', 60)}</span>
+                                <div style="text-align:right;flex-shrink:0;">
+                                    <div style="font-size:11px;color:rgba(255,255,255,0.35);">${relativeTime(l.created_at)}</div>
+                                    ${l.model_used ? `<div style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:2px;">${l.model_used}</div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+            const row2Left = `
+                <div class="glass-card" style="padding:0;overflow:hidden;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:7px;height:7px;border-radius:50%;background:#10B981;box-shadow:0 0 8px rgba(16,185,129,0.5);animation:mc-pulse 2.5s ease-in-out infinite;"></div>
+                            <span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85);">Live Activity</span>
+                        </div>
+                        <span style="font-size:12px;color:rgba(255,255,255,0.3);cursor:pointer;transition:color 200ms;" onmouseover="this.style.color='rgba(255,255,255,0.6)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">View All</span>
+                    </div>
+                    <div class="activity-feed-scroll" style="max-height:400px;padding:0 8px 12px;">
+                        ${activityRows}
+                    </div>
+                </div>
+            `;
+
+            // ROW 2 RIGHT — Stacked panels
+
+            // Panel 1: Availability
+            // TODO: Connect to real agent status system
+            const availabilityPanel = `
+                <div class="glass-card" style="padding:20px 24px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <div style="width:7px;height:7px;border-radius:50%;background:#10B981;box-shadow:0 0 6px rgba(16,185,129,0.4);"></div>
+                        <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.85);">Availability</span>
+                    </div>
+                    ${AGENTS.map(a => `
+                        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;">
+                            <div style="width:7px;height:7px;border-radius:50%;background:${a.glow};box-shadow:0 0 6px ${hexToRgba(a.glow, 0.4)};flex-shrink:0;"></div>
+                            <span style="font-size:13px;font-weight:600;color:${a.glow};min-width:40px;">${a.name}</span>
+                            <span style="font-size:12px;color:rgba(52,211,153,0.7);">Available for new tasks</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Panel 2: Recent Documents
+            // TODO: Connect to real document tracking
+            const docs = [
+                { name: 'hero-section-v2.html', agent: 'Mira', time: '15m ago', type: 'HTML' },
+                { name: 'component-spec.md', agent: 'Ari', time: '1h ago', type: 'MD' },
+                { name: 'nav-review.pdf', agent: 'Lena', time: '2h ago', type: 'PDF' },
+                { name: 'color-tokens.json', agent: 'Noah', time: '3h ago', type: 'JSON' },
+            ];
+            const docsPanel = `
+                <div class="glass-card" style="padding:20px 24px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <span style="font-size:14px;">📄</span>
+                        <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.85);">Recent Documents</span>
+                    </div>
+                    ${docs.map(d => `
+                        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div style="flex:1;overflow:hidden;">
+                                <div style="font-size:13px;color:rgba(255,255,255,0.75);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.name}</div>
+                                <div style="font-size:11px;color:rgba(255,255,255,0.3);"><span style="color:${agentColor(d.agent)}">${d.agent}</span> · ${d.time}</div>
+                            </div>
+                            <span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35);">${d.type}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Panel 3: Workshop Queue
+            // TODO: Connect to real task queue system
+            const queue = [
+                { title: 'Redesign settings page', agent: 'Mira', priority: '#EF4444', pLabel: 'Urgent' },
+                { title: 'Build form validation', agent: 'Noah', priority: '#F59E0B', pLabel: 'High' },
+                { title: 'Review auth flow', agent: 'Lena', priority: '#3B82F6', pLabel: 'Normal' },
+            ];
+            const queuePanel = `
+                <div class="glass-card" style="padding:20px 24px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <span style="font-size:14px;">⚡</span>
+                        <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.85);">Workshop Queue</span>
+                    </div>
+                    ${queue.map(q => `
+                        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;">
+                            <div style="width:7px;height:7px;border-radius:50%;background:${q.priority};box-shadow:0 0 6px ${hexToRgba(q.priority, 0.4)};flex-shrink:0;"></div>
+                            <span style="font-size:13px;color:rgba(255,255,255,0.7);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.title}</span>
+                            <span style="font-size:12px;font-weight:500;color:${agentColor(q.agent)};">${q.agent}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            const row2 = `
+                <div style="display:grid;grid-template-columns:3fr 2fr;gap:24px;margin-bottom:32px;" class="agent-card-stagger">
+                    ${row2Left}
+                    <div style="display:flex;flex-direction:column;gap:24px;">
+                        ${availabilityPanel}
+                        ${docsPanel}
+                        ${queuePanel}
+                    </div>
+                </div>
+            `;
+
+            // ROW 3 — Recent Commits
+            // TODO: Connect to real git/operation log
+            const commits = [
+                { agent: 'Mira', msg: 'mira/design: Transformed hero section to Liquid Glass UI', time: '25m ago' },
+                { agent: 'Noah', msg: 'noah/build: Implemented responsive grid with 12-column system', time: '1h ago' },
+                { agent: 'Lena', msg: 'lena/review: Reviewed dashboard accessibility — all tests pass', time: '2h ago' },
+                { agent: 'Ari', msg: 'ari/architecture: Restructured component tree for better state management', time: '3h ago' },
+                { agent: 'Noah', msg: 'noah/build: Added scroll animations to landing page', time: '5h ago' },
+            ];
+            const row3 = `
+                <div class="glass-card" style="padding:24px;" class="agent-card-stagger">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
+                        <span style="font-size:14px;">🔄</span>
+                        <span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85);">Recent Commits</span>
+                        <span style="font-size:12px;color:rgba(255,255,255,0.3);margin-left:4px;">Latest agent operations</span>
+                    </div>
+                    ${commits.map(c => `
+                        <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-left:2px solid ${agentColor(c.agent)};padding-left:14px;margin-left:4px;">
+                            <div style="width:7px;height:7px;border-radius:50%;background:${agentColor(c.agent)};box-shadow:0 0 6px ${hexToRgba(agentColor(c.agent), 0.4)};flex-shrink:0;"></div>
+                            <span style="font-size:13px;font-weight:600;color:${agentColor(c.agent)};flex-shrink:0;">${c.agent}</span>
+                            <span style="font-size:13px;color:rgba(255,255,255,0.6);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.msg}</span>
+                            <span style="font-size:11px;color:rgba(255,255,255,0.3);flex-shrink:0;">${c.time}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            container.innerHTML = row1 + row2 + row3;
         }
 
         // ── Main Data Loader ────────────────────────────
