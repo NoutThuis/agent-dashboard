@@ -1261,6 +1261,57 @@
             fetchSystemStatus();
             // Re-fetch every 5 minutes in case it updates
             setInterval(fetchSystemStatus, 5 * 60 * 1000);
+
+            // Activity status: check agent_logs for recent entries
+            async function updateActivityStatus() {
+                try {
+                    const sb = getSupabase();
+                    if (!sb) return;
+                    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+                    const { data, error } = await sb
+                        .from('agent_logs')
+                        .select('agent_name, task_description, created_at')
+                        .gte('created_at', fiveMinAgo)
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    const isActive = !error && data && data.length > 0;
+                    const latest = isActive ? data[0] : null;
+
+                    const triggerDot = document.getElementById('mcTriggerDot');
+                    const triggerLabel = document.getElementById('mcTriggerLabel');
+                    const statusDot = document.getElementById('mcStatusDot');
+                    const statusText = document.getElementById('mcStatusText');
+                    const activityEl = document.getElementById('mcActivity');
+
+                    if (triggerDot) triggerDot.className = isActive ? 'mc-status-dot mc-status-active' : 'mc-status-dot mc-status-idle';
+                    if (triggerLabel) {
+                        triggerLabel.textContent = isActive ? 'Active' : 'Idle';
+                        triggerLabel.style.color = isActive ? 'rgba(245,158,11,0.8)' : 'rgba(52,211,153,0.8)';
+                    }
+                    if (statusDot) {
+                        statusDot.style.background = isActive ? '#F59E0B' : '#34D399';
+                        statusDot.style.boxShadow = isActive ? '0 0 6px rgba(245,158,11,0.5)' : '0 0 6px rgba(52,211,153,0.5)';
+                    }
+                    if (statusText) statusText.textContent = isActive ? 'Status: Active' : 'Status: Idle';
+                    if (activityEl) {
+                        if (latest) {
+                            const desc = latest.task_description || 'Working';
+                            activityEl.textContent = `Latest: ${desc.length > 45 ? desc.slice(0, 45) + '…' : desc}`;
+                        } else {
+                            activityEl.textContent = 'Gateway: Running — awaiting instructions';
+                        }
+                    }
+                } catch (e) {
+                    console.warn('MC activity check failed:', e);
+                }
+            }
+
+            // Check every 15 seconds
+            setTimeout(() => {
+                updateActivityStatus();
+                setInterval(updateActivityStatus, 15000);
+            }, 2500);
         })();
 
         function showLogin() {
