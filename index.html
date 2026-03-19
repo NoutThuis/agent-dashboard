@@ -1725,10 +1725,10 @@
             return { color: '#6B7280', pulse: false, label: status || 'Unknown' };
         }
 
-        async function loadDashboardTab() {
+        async function loadDashboardTab(silent = false) {
             const container = document.getElementById('dashboard-container');
             if (!container) return;
-            container.innerHTML = dashboardSkeleton();
+            if (!silent) container.innerHTML = dashboardSkeleton();
 
             let logs = [];
             let tasks = [];
@@ -2045,7 +2045,7 @@
                 window._dashHealthInterval = setInterval(() => {
                     const panel = document.getElementById('panel-dashboard');
                     if (panel && panel.classList.contains('active')) {
-                        loadDashboardTab();
+                        loadDashboardTab(true);
                     }
                 }, 30000);
             }
