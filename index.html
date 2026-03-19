@@ -54,7 +54,7 @@
         .blob-1 {
             width: 800px;
             height: 800px;
-            background: radial-gradient(circle, rgba(124, 58, 237, 0.14) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.25) 0%, transparent 70%);
             top: -15%;
             left: -10%;
             animation: drift-1 68s ease-in-out infinite;
@@ -63,7 +63,7 @@
         .blob-2 {
             width: 700px;
             height: 700px;
-            background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.22) 0%, transparent 70%);
             top: 40%;
             right: -8%;
             animation: drift-2 74s ease-in-out infinite;
@@ -72,7 +72,7 @@
         .blob-3 {
             width: 600px;
             height: 600px;
-            background: radial-gradient(circle, rgba(236, 72, 153, 0.10) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.20) 0%, transparent 70%);
             bottom: -10%;
             left: 30%;
             animation: drift-3 80s ease-in-out infinite;
@@ -101,15 +101,15 @@
 
         /* ── Glass Card System ────────────────────────── */
         .glass-card {
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(40px) saturate(1.8);
             -webkit-backdrop-filter: blur(40px) saturate(1.8);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 20px;
             box-shadow:
-                0 8px 32px rgba(0, 0, 0, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.05),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.08),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
             position: relative;
             overflow: hidden;
             transition: background 300ms ease, border-color 300ms ease;
@@ -122,13 +122,13 @@
             left: 0;
             right: 0;
             height: 1px;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 30%, rgba(255, 255, 255, 0.15) 70%, transparent 100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 30%, rgba(255, 255, 255, 0.25) 70%, transparent 100%);
             pointer-events: none;
         }
 
         .glass-card:hover {
-            background: rgba(255, 255, 255, 0.07);
-            border-color: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.18);
         }
 
         /* ── Navigation Bar (higher opacity glass) ───── */
@@ -793,7 +793,7 @@
             return `
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" class="agent-card-stagger">
                     ${stats.map(s => `
-                        <div class="glass-card" style="padding:20px 24px;box-shadow:0 8px 32px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.05),inset 0 1px 0 0 rgba(255,255,255,0.05),0 0 30px ${hexToRgba(s.color, 0.08)};">
+                        <div class="glass-card" style="padding:20px 24px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(s.color, 0.18)};">
                             <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">${s.label}</div>
                             <div style="font-size:28px;font-weight:600;color:rgba(255,255,255,0.9);">${s.value}</div>
                         </div>
@@ -813,7 +813,7 @@
                         const latest = agentLogs[0] || null; // already sorted desc
 
                         return `
-                            <div class="glass-card" style="padding:24px;box-shadow:0 8px 32px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.05),inset 0 1px 0 0 rgba(255,255,255,0.05),0 0 30px ${hexToRgba(agent.glow, 0.15)};border-top:2px solid ${hexToRgba(agent.glow, 0.3)};">
+                            <div class="glass-card" style="padding:24px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(agent.glow, 0.3)};border-top:2px solid ${hexToRgba(agent.glow, 0.45)};">
                                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
                                     <span style="font-size:28px;">${agent.emoji}</span>
                                     <div>
