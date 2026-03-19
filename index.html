@@ -1781,13 +1781,12 @@
             const row1 = `
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
                     <!-- TODO: Connect to real system status -->
-                    <!-- TODO: Connect to real system status -->
-                    <div class="glass-card" style="padding:24px;border-top:2px solid rgba(16,185,129,0.35);box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px rgba(16,185,129,0.22);">
+                    <div class="glass-card" id="dashSystemStatus" style="padding:24px;border-top:2px solid rgba(16,185,129,0.35);box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px rgba(16,185,129,0.22);">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                            <div style="width:8px;height:8px;border-radius:50%;background:#10B981;box-shadow:0 0 8px rgba(16,185,129,0.5);"></div>
-                            <span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.9);">All Systems Online</span>
+                            <div style="width:8px;height:8px;border-radius:50%;background:#6B7280;box-shadow:0 0 8px rgba(107,114,128,0.5);" id="dashSysDot"></div>
+                            <span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.9);" id="dashSysLabel">Checking…</span>
                         </div>
-                        <div style="font-size:12px;color:rgba(255,255,255,0.35);">Last checked: ${currentTime}</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.35);" id="dashSysSub">Last checked: ${currentTime}</div>
                     </div>
                     <div class="glass-card" style="padding:24px;border-top:2px solid rgba(245,158,11,0.35);box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px rgba(245,158,11,0.22);">
                         <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:4px;">${inProgressCount}</div>
@@ -1971,6 +1970,57 @@
             `;
 
             container.innerHTML = row1 + row2 + row3;
+
+            // System Status card — check real health
+            (async function checkSystemStatus() {
+                const dot = document.getElementById('dashSysDot');
+                const label = document.getElementById('dashSysLabel');
+                const sub = document.getElementById('dashSysSub');
+                const card = document.getElementById('dashSystemStatus');
+                if (!dot || !label) return;
+
+                let issues = [];
+
+                // Check 1: Gateway config reachable
+                try {
+                    const res = await fetch('system-status.json?t=' + Date.now());
+                    if (!res.ok) issues.push('Gateway config unreachable');
+                } catch (e) { issues.push('Gateway config unreachable'); }
+
+                // Check 2: Supabase reachable (we already fetched)
+                if (logsError) issues.push('Agent logs unavailable');
+                if (tasksError) issues.push('Task data unavailable');
+
+                const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+                if (issues.length === 0) {
+                    dot.style.background = '#10B981';
+                    dot.style.boxShadow = '0 0 8px rgba(16,185,129,0.5)';
+                    label.textContent = 'All Systems Online';
+                    if (card) {
+                        card.style.borderTopColor = 'rgba(16,185,129,0.35)';
+                        card.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px rgba(16,185,129,0.22)';
+                    }
+                } else if (issues.length <= 1) {
+                    dot.style.background = '#F59E0B';
+                    dot.style.boxShadow = '0 0 8px rgba(245,158,11,0.5)';
+                    label.textContent = 'Partial Issues';
+                    if (card) {
+                        card.style.borderTopColor = 'rgba(245,158,11,0.35)';
+                        card.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px rgba(245,158,11,0.22)';
+                    }
+                } else {
+                    dot.style.background = '#EF4444';
+                    dot.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+                    label.textContent = 'Systems Degraded';
+                    if (card) {
+                        card.style.borderTopColor = 'rgba(239,68,68,0.35)';
+                        card.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px rgba(239,68,68,0.22)';
+                    }
+                }
+
+                if (sub) sub.textContent = issues.length > 0 ? issues.join(' · ') + ` · ${time}` : `Last checked: ${time}`;
+            })();
         }
 
         // ── Main Data Loader ────────────────────────────
