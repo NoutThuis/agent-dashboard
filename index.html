@@ -1847,21 +1847,38 @@
 
             // ROW 2 RIGHT — Stacked panels
 
-            // Panel 1: Availability
-            // TODO: Connect to real agent status system
+            // Panel 1: Availability — based on agent_tasks in_progress
+            const busyAgents = {};
+            if (!tasksError) {
+                tasks.forEach(t => {
+                    if ((t.status || '').toLowerCase() === 'in_progress' && t.agent_name) {
+                        busyAgents[t.agent_name.toLowerCase()] = (busyAgents[t.agent_name.toLowerCase()] || 0) + 1;
+                    }
+                });
+            }
+            const anyBusy = Object.keys(busyAgents).length > 0;
+            const headerDotColor = anyBusy ? '#F59E0B' : '#10B981';
             const availabilityPanel = `
                 <div class="glass-card" style="padding:20px 24px;">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                        <div style="width:7px;height:7px;border-radius:50%;background:#10B981;box-shadow:0 0 6px rgba(16,185,129,0.4);"></div>
+                        <div style="width:7px;height:7px;border-radius:50%;background:${headerDotColor};box-shadow:0 0 6px ${hexToRgba(headerDotColor, 0.4)};"></div>
                         <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.85);">Availability</span>
                     </div>
-                    ${AGENTS.map(a => `
-                        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;">
-                            <div style="width:7px;height:7px;border-radius:50%;background:${a.glow};box-shadow:0 0 6px ${hexToRgba(a.glow, 0.4)};flex-shrink:0;"></div>
-                            <span style="font-size:13px;font-weight:600;color:${a.glow};min-width:40px;">${a.name}</span>
-                            <span style="font-size:12px;color:rgba(52,211,153,0.7);">Available for new tasks</span>
-                        </div>
-                    `).join('')}
+                    ${tasksError
+                        ? '<div style="font-size:12px;color:#F87171;">Unable to load — <span onclick="loadDashboardTab()" style="cursor:pointer;text-decoration:underline;">Retry</span></div>'
+                        : AGENTS.map(a => {
+                            const busy = busyAgents[a.name.toLowerCase()] || 0;
+                            const isBusy = busy > 0;
+                            const statusColor = isBusy ? '#F59E0B' : 'rgba(52,211,153,0.7)';
+                            const statusText = isBusy ? `Working on ${busy} task${busy > 1 ? 's' : ''}` : 'Available';
+                            return `
+                                <div style="display:flex;align-items:center;gap:10px;padding:7px 0;">
+                                    <div style="width:7px;height:7px;border-radius:50%;background:${a.glow};box-shadow:0 0 6px ${hexToRgba(a.glow, 0.4)};flex-shrink:0;"></div>
+                                    <span style="font-size:13px;font-weight:600;color:${a.glow};min-width:40px;">${a.name}</span>
+                                    <span style="font-size:12px;color:${statusColor};">${statusText}</span>
+                                </div>
+                            `;
+                        }).join('')}
                 </div>
             `;
 
