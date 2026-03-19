@@ -1732,16 +1732,19 @@
 
             let logs = [];
             let tasks = [];
+            let docs = [];
             let logsError = false;
             let tasksError = false;
+            let docsError = false;
 
             try {
                 const sb = getSupabase();
                 if (!sb) throw new Error('Supabase not loaded');
 
-                const [logsRes, tasksRes] = await Promise.allSettled([
+                const [logsRes, tasksRes, docsRes] = await Promise.allSettled([
                     sb.from('agent_logs').select('*').order('created_at', { ascending: false }).limit(500),
-                    sb.from('agent_tasks').select('*')
+                    sb.from('agent_tasks').select('*'),
+                    sb.from('agent_documents').select('*').order('created_at', { ascending: false }).limit(10)
                 ]);
 
                 if (logsRes.status === 'fulfilled' && !logsRes.value.error) {
@@ -1755,9 +1758,16 @@
                 } else {
                     tasksError = true;
                 }
+
+                if (docsRes.status === 'fulfilled' && !docsRes.value.error) {
+                    docs = docsRes.value.data || [];
+                } else {
+                    docsError = true;
+                }
             } catch (e) {
                 logsError = true;
                 tasksError = true;
+                docsError = true;
             }
 
             // Compute stats
@@ -1881,30 +1891,31 @@
                 </div>
             `;
 
-            // Panel 2: Recent Documents
-            // TODO: Connect to real document tracking
-            const docs = [
-                { name: 'hero-section-v2.html', agent: 'Mira', time: '15m ago', type: 'HTML' },
-                { name: 'component-spec.md', agent: 'Ari', time: '1h ago', type: 'MD' },
-                { name: 'nav-review.pdf', agent: 'Lena', time: '2h ago', type: 'PDF' },
-                { name: 'color-tokens.json', agent: 'Noah', time: '3h ago', type: 'JSON' },
-            ];
+            // Panel 2: Recent Documents — from agent_documents table
+            const docsContent = docsError
+                ? '<div style="font-size:12px;color:#F87171;">Unable to load — <span onclick="loadDashboardTab()" style="cursor:pointer;text-decoration:underline;">Retry</span></div>'
+                : docs.length === 0
+                    ? '<div style="font-size:12px;color:rgba(255,255,255,0.3);">No documents yet</div>'
+                    : docs.map(d => {
+                        const ftype = (d.file_type || d.name.split('.').pop() || '?').toUpperCase();
+                        return `
+                            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                <div style="flex:1;overflow:hidden;">
+                                    <div style="font-size:13px;color:rgba(255,255,255,0.75);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.file_url ? '<a href="' + d.file_url + '" target="_blank" style="color:rgba(255,255,255,0.75);text-decoration:none;">' + d.name + '</a>' : d.name}</div>
+                                    <div style="font-size:11px;color:rgba(255,255,255,0.3);"><span style="color:${agentColor(d.agent_name)}">${d.agent_name}</span> · ${relativeTime(d.created_at)}</div>
+                                </div>
+                                <span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35);">${ftype}</span>
+                            </div>
+                        `;
+                    }).join('');
             const docsPanel = `
                 <div class="glass-card" style="padding:20px 24px;">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
                         <span style="font-size:14px;">📄</span>
                         <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.85);">Recent Documents</span>
                     </div>
-                    ${docs.map(d => `
-                        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            <div style="flex:1;overflow:hidden;">
-                                <div style="font-size:13px;color:rgba(255,255,255,0.75);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.name}</div>
-                                <div style="font-size:11px;color:rgba(255,255,255,0.3);"><span style="color:${agentColor(d.agent)}">${d.agent}</span> · ${d.time}</div>
-                            </div>
-                            <span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35);">${d.type}</span>
-                        </div>
-                    `).join('')}
+                    ${docsContent}
                 </div>
             `;
 
