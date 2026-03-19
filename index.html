@@ -425,6 +425,32 @@
     </div>
 
     <script>
+        // ── Tab Switching (runs first, no dependencies) ─
+        (function initTabs() {
+            const tabList = document.getElementById('tabList');
+            const buttons = tabList.querySelectorAll('.tab-btn');
+            const panels = document.querySelectorAll('.tab-panel');
+
+            function switchTab(tabName) {
+                buttons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
+                panels.forEach(panel => panel.classList.remove('active'));
+                const target = document.getElementById(`panel-${tabName}`);
+                if (target) {
+                    requestAnimationFrame(() => target.classList.add('active'));
+                }
+                if (tabName === 'agents') {
+                    loadAgentsTab();
+                }
+            }
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+            });
+
+            // Expose for external use
+            window._switchTab = switchTab;
+        })();
+
         // ── Supabase Configuration ──────────────────────
         // IMPORTANT: This dashboard uses the anon key, NOT the service role key.
         // The service role key must never be placed in frontend code.
@@ -434,7 +460,13 @@
             anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqYmdkcXN5bXN1cHRpb2hndXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3Njc4MTksImV4cCI6MjA4OTM0MzgxOX0.Ua8owBFt8WOclVqwIpoYVSYvH2EvaeVDW7ojL-0DGng',
         };
 
-        const supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+        let supabaseClient = null;
+        function getSupabase() {
+            if (!supabaseClient && window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+            }
+            return supabaseClient;
+        }
 
         // ── Agent Definitions ───────────────────────────
         const AGENTS = [
@@ -708,7 +740,9 @@
             container.innerHTML = renderSkeleton();
 
             try {
-                const { data, error } = await supabase
+                const sb = getSupabase();
+                if (!sb) throw new Error('Supabase SDK not loaded');
+                const { data, error } = await sb
                     .from('agent_logs')
                     .select('*')
                     .order('created_at', { ascending: false })
@@ -747,34 +781,7 @@
             await loadAgentsTab();
         }
 
-        // ── Tab Switching ───────────────────────────────
-        const tabList = document.getElementById('tabList');
-        const buttons = tabList.querySelectorAll('.tab-btn');
-        const panels = document.querySelectorAll('.tab-panel');
-
-        function switchTab(tabName) {
-            buttons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
-
-            panels.forEach(panel => {
-                panel.classList.remove('active');
-            });
-
-            const target = document.getElementById(`panel-${tabName}`);
-            if (target) {
-                requestAnimationFrame(() => {
-                    target.classList.add('active');
-                });
-            }
-
-            // Load agents data on tab activation
-            if (tabName === 'agents') {
-                loadAgentsTab();
-            }
-        }
-
-        buttons.forEach(btn => {
-            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-        });
+        // Tab switching is initialized at the top of the script block.
     </script>
 </body>
 </html>
