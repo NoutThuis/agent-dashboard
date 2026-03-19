@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -473,6 +474,426 @@
         .app-container.visible {
             display: flex;
         }
+
+        /* ── Tasks Tab Styles ─────────────────────────── */
+        .tasks-overview-bar {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 32px;
+            max-height: 120px;
+        }
+
+        .tasks-stat-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(40px) saturate(1.8);
+            -webkit-backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+            padding: 16px 20px;
+            min-width: 140px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tasks-stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 30%, rgba(255, 255, 255, 0.25) 70%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .tasks-motivation-pill {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(236, 72, 153, 0.5));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            white-space: nowrap;
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.25), 0 0 40px rgba(236, 72, 153, 0.15);
+            animation: motivation-glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes motivation-glow {
+            from { box-shadow: 0 0 20px rgba(124, 58, 237, 0.25), 0 0 40px rgba(236, 72, 153, 0.15); }
+            to { box-shadow: 0 0 30px rgba(124, 58, 237, 0.35), 0 0 50px rgba(236, 72, 153, 0.25); }
+        }
+
+        .tasks-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .tasks-filter-select {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 12px;
+            padding: 8px 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+            transition: border-color 200ms ease, background 200ms ease;
+        }
+
+        .tasks-filter-select:hover {
+            background-color: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .tasks-filter-select:focus {
+            border-color: rgba(124, 58, 237, 0.5);
+        }
+
+        .tasks-filter-select option {
+            background: #1a1f2e;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            min-height: 400px;
+        }
+
+        .kanban-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 300px;
+            padding: 4px;
+            border-radius: 20px;
+            transition: background 200ms ease, box-shadow 200ms ease;
+        }
+
+        .kanban-column.drag-over {
+            background: rgba(124, 58, 237, 0.06);
+            box-shadow: inset 0 0 30px rgba(124, 58, 237, 0.08);
+        }
+
+        .kanban-col-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 4px 12px;
+        }
+
+        .kanban-col-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .kanban-col-count {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .kanban-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(40px) saturate(1.8);
+            -webkit-backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+            padding: 20px;
+            cursor: grab;
+            transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease, background 200ms ease, border-color 200ms ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kanban-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 30%, rgba(255, 255, 255, 0.25) 70%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .kanban-card:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .kanban-card.dragging {
+            opacity: 0.7;
+            transform: scale(1.03) rotate(1deg);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 60px rgba(124, 58, 237, 0.15);
+            cursor: grabbing;
+            z-index: 100;
+        }
+
+        .kanban-card-checkbox {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            cursor: pointer;
+            transition: all 200ms ease;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kanban-card-checkbox:hover {
+            border-color: #10B981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .kanban-card-checkbox.checked {
+            border-color: #10B981;
+            background: #10B981;
+        }
+
+        .kanban-card-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .kanban-pill {
+            display: inline-flex;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .kanban-menu-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 200ms ease;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .kanban-menu-btn:hover {
+            color: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .kanban-dropdown {
+            position: absolute;
+            top: 40px;
+            right: 16px;
+            background: rgba(20, 25, 40, 0.95);
+            backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            overflow: hidden;
+            min-width: 120px;
+        }
+
+        .kanban-dropdown-item {
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: background 200ms ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .kanban-dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .kanban-dropdown-item.danger {
+            color: #F87171;
+        }
+
+        .kanban-dropdown-item.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .kanban-add-btn {
+            background: none;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 200ms ease;
+            width: 100%;
+            text-align: center;
+        }
+
+        .kanban-add-btn:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .kanban-inline-form {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .kanban-form-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 200ms ease;
+        }
+
+        .kanban-form-input:focus {
+            border-color: rgba(124, 58, 237, 0.5);
+        }
+
+        .kanban-form-input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        .kanban-form-select {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 28px;
+        }
+
+        .kanban-form-select option {
+            background: #1a1f2e;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .kanban-form-btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: opacity 200ms ease;
+        }
+
+        .kanban-form-btn.primary {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.8), rgba(236, 72, 153, 0.8));
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .kanban-form-btn.secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .kanban-form-btn:hover {
+            opacity: 0.85;
+        }
+
+        /* ── Edit Modal ──────────────────────────────── */
+        .task-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-modal {
+            background: rgba(20, 25, 40, 0.95);
+            backdrop-filter: blur(40px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+            padding: 32px;
+            width: 440px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .task-modal::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 30%, rgba(255, 255, 255, 0.15) 70%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .task-modal h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }
+
+        /* Tasks shimmer skeleton */
+        .tasks-skeleton-card {
+            height: 140px;
+            border-radius: 20px;
+        }
     </style>
 </head>
 <body class="font-inter antialiased">
@@ -546,7 +967,7 @@
             </div>
 
             <div id="panel-tasks" class="tab-panel">
-                <!-- Tasks tab will go here -->
+                <div id="tasks-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
             </div>
 
             <div id="panel-settings" class="tab-panel">
@@ -572,6 +993,12 @@
         function showApp() {
             loginOverlay.classList.add('hidden');
             appContainer.classList.add('visible');
+            requestAnimationFrame(() => {
+                const tasksContainer = document.getElementById('tasks-container');
+                if (tasksContainer && !tasksContainer.innerHTML.trim()) {
+                    loadTasksTab();
+                }
+            });
         }
 
         function showLogin() {
@@ -639,6 +1066,9 @@
                 }
                 if (tabName === 'agents') {
                     loadAgentsTab();
+                }
+                if (tabName === 'tasks') {
+                    loadTasksTab();
                 }
             }
 
@@ -981,6 +1411,603 @@
         }
 
         // Tab switching is initialized at the top of the script block.
+
+        // ── Tasks Tab ───────────────────────────────────
+        const AGENT_COLORS = { Mira: '#3B82F6', Ari: '#7C3AED', Noah: '#F59E0B', Lena: '#10B981', Manual: '#FFFFFF' };
+        const AGENT_ROLES = { Mira: 'Frontend Designer', Ari: 'Frontend Architect', Noah: 'Frontend Builder', Lena: 'Frontend Reviewer', Manual: 'User' };
+        const CAT_COLORS = { Design: '#EC4899', Architecture: '#7C3AED', Development: '#10B981', Review: '#06B6D4' };
+        const PRI_COLORS = { Urgent: '#EF4444', High: '#F97316', Normal: '#3B82F6', Low: '#6B7280' };
+        const TRACK_COLORS = { 'On Track': '#10B981', 'At Risk': '#F59E0B', 'Off Track': '#EF4444' };
+
+        let tasksData = [];
+        let tasksChart = null;
+        let tasksCategoryFilter = 'All';
+        let tasksPriorityFilter = 'All';
+
+        const SEED_TASKS = [
+            { title: 'Design hero section layout', agent_name: 'Mira', role: 'Frontend Designer', category: 'Design', priority: 'High', track_status: 'On Track', status: 'todo', completed: false },
+            { title: 'Define component architecture for dashboard', agent_name: 'Ari', role: 'Frontend Architect', category: 'Architecture', priority: 'Urgent', track_status: 'At Risk', status: 'todo', completed: false },
+            { title: 'Build navigation component', agent_name: 'Noah', role: 'Frontend Builder', category: 'Development', priority: 'Normal', track_status: 'On Track', status: 'in_progress', completed: false },
+            { title: 'Review landing page accessibility', agent_name: 'Lena', role: 'Frontend Reviewer', category: 'Review', priority: 'High', track_status: 'At Risk', status: 'in_progress', completed: false },
+            { title: 'Implement responsive grid system', agent_name: 'Noah', role: 'Frontend Builder', category: 'Development', priority: 'Normal', track_status: 'On Track', status: 'done', completed: true },
+            { title: 'Design color system tokens', agent_name: 'Mira', role: 'Frontend Designer', category: 'Design', priority: 'Low', track_status: 'On Track', status: 'done', completed: true },
+        ];
+
+        function tasksSkeletonHTML() {
+            const cols = ['To Do', 'Doing', 'Done'];
+            return `
+                <div style="margin-bottom:32px;">
+                    <div style="display:flex;gap:20px;align-items:center;">
+                        <div class="skeleton-pulse" style="width:80px;height:80px;border-radius:50%;"></div>
+                        <div class="skeleton-pulse" style="flex:1;height:70px;"></div>
+                        <div class="skeleton-pulse" style="flex:1;height:70px;"></div>
+                        <div class="skeleton-pulse" style="flex:1;height:70px;"></div>
+                        <div class="skeleton-pulse" style="width:200px;height:40px;border-radius:24px;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom:32px;">
+                    <div style="display:flex;gap:12px;">
+                        <div class="skeleton-pulse" style="width:160px;height:38px;"></div>
+                        <div class="skeleton-pulse" style="width:160px;height:38px;"></div>
+                        <div class="skeleton-pulse" style="width:80px;height:38px;"></div>
+                    </div>
+                </div>
+                <div class="kanban-board">
+                    ${cols.map(() => `
+                        <div>
+                            <div class="skeleton-pulse" style="height:30px;width:120px;margin-bottom:12px;"></div>
+                            <div class="skeleton-pulse tasks-skeleton-card" style="margin-bottom:12px;"></div>
+                            <div class="skeleton-pulse tasks-skeleton-card" style="margin-bottom:12px;"></div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function tasksErrorHTML(message = 'Unable to load tasks') {
+            return `
+                <div class="error-banner" style="margin-bottom:24px;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <span style="color:rgba(248,113,113,0.9);font-size:14px;font-weight:500;">${message}</span>
+                    </div>
+                    <button onclick="loadTasksTab()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:6px 14px;color:#F87171;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Retry</button>
+                </div>
+            `;
+        }
+
+        function renderTasksEmptyState(message = 'No tasks yet.') {
+            return `
+                <div class="glass-card" style="padding:32px;display:flex;flex-direction:column;gap:10px;align-items:flex-start;">
+                    <div style="font-size:18px;font-weight:600;color:rgba(255,255,255,0.88);">Tasks board is empty</div>
+                    <div style="font-size:14px;line-height:1.6;color:rgba(255,255,255,0.55);max-width:720px;">${message}</div>
+                </div>
+            `;
+        }
+
+        function getMotivation(donePercent) {
+            if (donePercent >= 91) return 'Outstanding — you crushed it! 🏆';
+            if (donePercent >= 61) return 'Almost there — finish strong! 🔥';
+            if (donePercent >= 31) return 'Good progress — keep pushing! 💪';
+            return 'Just getting started — let\'s go! 🚀';
+        }
+
+        function pillHTML(label, color) {
+            return `<span class="kanban-pill" style="background:${hexToRgba(color, 0.15)};color:${color};">${label}</span>`;
+        }
+
+        function filteredTasks() {
+            return tasksData.filter(t => {
+                if (tasksCategoryFilter !== 'All' && t.category !== tasksCategoryFilter) return false;
+                if (tasksPriorityFilter !== 'All' && t.priority !== tasksPriorityFilter) return false;
+                return true;
+            });
+        }
+
+        function renderTaskCard(task) {
+            const agentColor = AGENT_COLORS[task.agent_name] || '#9CA3AF';
+            const catColor = CAT_COLORS[task.category] || '#6B7280';
+            const priColor = PRI_COLORS[task.priority] || '#3B82F6';
+            const trackColor = TRACK_COLORS[task.track_status] || '#6B7280';
+            const isChecked = task.status === 'done';
+            const dueStr = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+
+            return `
+                <div class="kanban-card" draggable="true" data-task-id="${task.id}"
+                     ondragstart="onTaskDragStart(event, '${task.id}')"
+                     ondragend="onTaskDragEnd(event)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:8px;height:8px;border-radius:50%;background:${agentColor};box-shadow:0 0 6px ${hexToRgba(agentColor, 0.5)};"></div>
+                            <span style="font-size:12px;font-weight:600;color:${agentColor};">${task.agent_name}</span>
+                        </div>
+                        <div style="position:relative;">
+                            <button class="kanban-menu-btn" onclick="toggleTaskMenu(event, '${task.id}')">⋯</button>
+                            <div class="kanban-dropdown" id="task-menu-${task.id}" style="display:none;">
+                                <button class="kanban-dropdown-item" onclick="openEditModal('${task.id}')">Edit</button>
+                                <button class="kanban-dropdown-item danger" onclick="deleteTask('${task.id}')">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+                        <div class="kanban-card-checkbox ${isChecked ? 'checked' : ''}" onclick="toggleTaskDone(event, '${task.id}')"></div>
+                        <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.9);line-height:1.4;">${task.title}</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${dueStr ? '12px' : '0'};">
+                        ${pillHTML(task.category, catColor)}
+                        ${pillHTML(task.priority, priColor)}
+                        ${pillHTML(task.track_status, trackColor)}
+                    </div>
+                    ${dueStr ? `<div style="text-align:right;font-size:11px;color:rgba(255,255,255,0.35);font-weight:500;">${dueStr}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function addTaskFormHTML(status) {
+            return `
+                <div class="kanban-inline-form" id="add-form-${status}">
+                    <input class="kanban-form-input" id="add-title-${status}" placeholder="Task title" />
+                    <select class="kanban-form-select" id="add-agent-${status}">
+                        <option value="" disabled selected>Agent</option>
+                        <option value="Mira">Mira</option>
+                        <option value="Ari">Ari</option>
+                        <option value="Noah">Noah</option>
+                        <option value="Lena">Lena</option>
+                        <option value="Manual">Manual</option>
+                    </select>
+                    <select class="kanban-form-select" id="add-category-${status}">
+                        <option value="" disabled selected>Category</option>
+                        <option>Design</option>
+                        <option>Architecture</option>
+                        <option>Development</option>
+                        <option>Review</option>
+                    </select>
+                    <select class="kanban-form-select" id="add-priority-${status}">
+                        <option value="" disabled selected>Priority</option>
+                        <option>Urgent</option>
+                        <option>High</option>
+                        <option>Normal</option>
+                        <option>Low</option>
+                    </select>
+                    <select class="kanban-form-select" id="add-track-${status}">
+                        <option value="" disabled selected>Track Status</option>
+                        <option>On Track</option>
+                        <option>At Risk</option>
+                        <option>Off Track</option>
+                    </select>
+                    <input class="kanban-form-input" type="date" id="add-due-${status}" />
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button class="kanban-form-btn secondary" onclick="cancelAddTask('${status}')">Cancel</button>
+                        <button class="kanban-form-btn primary" onclick="saveNewTask('${status}')">Save</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTasksBoard() {
+            const tasks = filteredTasks();
+            const todo = tasks.filter(t => t.status === 'todo');
+            const doing = tasks.filter(t => t.status === 'in_progress');
+            const done = tasks.filter(t => t.status === 'done');
+
+            const columns = [
+                { title: 'To Do', status: 'todo', tasks: todo, color: '#3B82F6' },
+                { title: 'Doing', status: 'in_progress', tasks: doing, color: '#F59E0B' },
+                { title: 'Done', status: 'done', tasks: done, color: '#10B981' },
+            ];
+
+            return `
+                <div class="kanban-board">
+                    ${columns.map(col => `
+                        <div class="kanban-column" data-status="${col.status}"
+                             ondragover="onTaskDragOver(event)" ondragleave="onTaskDragLeave(event)" ondrop="onTaskDrop(event, '${col.status}')">
+                            <div class="kanban-col-header">
+                                <span class="kanban-col-title">${col.title}</span>
+                                <span class="kanban-col-count">${col.tasks.length}</span>
+                            </div>
+                            <div id="kanban-cards-${col.status}">
+                                ${col.tasks.map(t => renderTaskCard(t)).join('')}
+                            </div>
+                            <div id="add-task-area-${col.status}"></div>
+                            <button class="kanban-add-btn" onclick="showAddTaskForm('${col.status}')">+ Add Task</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderOverviewBar() {
+            const total = tasksData.length;
+            const todoCount = tasksData.filter(t => t.status === 'todo').length;
+            const doingCount = tasksData.filter(t => t.status === 'in_progress').length;
+            const doneCount = tasksData.filter(t => t.status === 'done').length;
+            const donePercent = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+            const todoPercent = total > 0 ? Math.round((todoCount / total) * 100) : 0;
+            const doingPercent = total > 0 ? Math.round((doingCount / total) * 100) : 0;
+
+            return `
+                <div class="tasks-overview-bar">
+                    <div style="flex-shrink:0;">
+                        <canvas id="tasksDonutChart" width="80" height="80"></canvas>
+                    </div>
+                    <div class="tasks-stat-card" style="flex:1;box-shadow:0 8px 32px rgba(0,0,0,0.35),0 0 30px rgba(59,130,246,0.12);">
+                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">To Do</div>
+                        <div style="display:flex;align-items:baseline;gap:8px;">
+                            <span style="font-size:24px;font-weight:600;color:rgba(255,255,255,0.9);">${todoCount}</span>
+                            <span style="font-size:12px;color:#3B82F6;font-weight:600;">${todoPercent}%</span>
+                        </div>
+                    </div>
+                    <div class="tasks-stat-card" style="flex:1;box-shadow:0 8px 32px rgba(0,0,0,0.35),0 0 30px rgba(245,158,11,0.12);">
+                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Doing</div>
+                        <div style="display:flex;align-items:baseline;gap:8px;">
+                            <span style="font-size:24px;font-weight:600;color:rgba(255,255,255,0.9);">${doingCount}</span>
+                            <span style="font-size:12px;color:#F59E0B;font-weight:600;">${doingPercent}%</span>
+                        </div>
+                    </div>
+                    <div class="tasks-stat-card" style="flex:1;box-shadow:0 8px 32px rgba(0,0,0,0.35),0 0 30px rgba(16,185,129,0.12);">
+                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Done</div>
+                        <div style="display:flex;align-items:baseline;gap:8px;">
+                            <span style="font-size:24px;font-weight:600;color:rgba(255,255,255,0.9);">${doneCount}</span>
+                            <span style="font-size:12px;color:#10B981;font-weight:600;">${donePercent}%</span>
+                        </div>
+                    </div>
+                    <div class="tasks-motivation-pill">${getMotivation(donePercent)}</div>
+                </div>
+            `;
+        }
+
+        function renderFilterBar() {
+            return `
+                <div class="tasks-filter-bar">
+                    <select class="tasks-filter-select" id="tasks-cat-filter" onchange="tasksCategoryFilter=this.value;renderTasksContent();">
+                        <option value="All" ${tasksCategoryFilter === 'All' ? 'selected' : ''}>All Categories</option>
+                        <option value="Design" ${tasksCategoryFilter === 'Design' ? 'selected' : ''}>Design</option>
+                        <option value="Architecture" ${tasksCategoryFilter === 'Architecture' ? 'selected' : ''}>Architecture</option>
+                        <option value="Development" ${tasksCategoryFilter === 'Development' ? 'selected' : ''}>Development</option>
+                        <option value="Review" ${tasksCategoryFilter === 'Review' ? 'selected' : ''}>Review</option>
+                    </select>
+                    <select class="tasks-filter-select" id="tasks-pri-filter" onchange="tasksPriorityFilter=this.value;renderTasksContent();">
+                        <option value="All" ${tasksPriorityFilter === 'All' ? 'selected' : ''}>All Priorities</option>
+                        <option value="Urgent" ${tasksPriorityFilter === 'Urgent' ? 'selected' : ''}>Urgent</option>
+                        <option value="High" ${tasksPriorityFilter === 'High' ? 'selected' : ''}>High</option>
+                        <option value="Normal" ${tasksPriorityFilter === 'Normal' ? 'selected' : ''}>Normal</option>
+                        <option value="Low" ${tasksPriorityFilter === 'Low' ? 'selected' : ''}>Low</option>
+                    </select>
+                    <button class="refresh-btn" onclick="loadTasksTab()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderTasksContent() {
+            const container = document.getElementById('tasks-container');
+            if (!container) return;
+            container.innerHTML = renderOverviewBar() + renderFilterBar() + renderTasksBoard();
+            initTasksDonut();
+        }
+
+        function initTasksDonut() {
+            const canvas = document.getElementById('tasksDonutChart');
+            if (!canvas) return;
+            if (tasksChart) { tasksChart.destroy(); tasksChart = null; }
+
+            const todoCount = tasksData.filter(t => t.status === 'todo').length;
+            const doingCount = tasksData.filter(t => t.status === 'in_progress').length;
+            const doneCount = tasksData.filter(t => t.status === 'done').length;
+
+            tasksChart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['To Do', 'Doing', 'Done'],
+                    datasets: [{
+                        data: [todoCount, doingCount, doneCount],
+                        backgroundColor: ['#3B82F6', '#F59E0B', '#10B981'],
+                        borderWidth: 0,
+                        hoverOffset: 4,
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    cutout: '65%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                }
+            });
+        }
+
+        async function loadTasksTab() {
+            const container = document.getElementById('tasks-container');
+            if (!container) return;
+
+            container.innerHTML = tasksSkeletonHTML();
+
+            try {
+                const sb = getSupabase();
+                if (!sb) throw new Error('Supabase SDK not loaded');
+
+                let { data, error } = await sb.from('agent_tasks').select('*').order('created_at', { ascending: true });
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    const { data: seeded, error: seedErr } = await sb.from('agent_tasks').insert(SEED_TASKS).select();
+                    if (seedErr) {
+                        const msg = seedErr.message || '';
+                        if (msg.toLowerCase().includes('row-level security')) {
+                            tasksData = [];
+                            container.innerHTML = tasksErrorHTML('Tasks table is empty and Supabase RLS blocked automatic seeding.') + renderTasksEmptyState('The tab itself works now, but your current policies do not allow inserting seed tasks from the browser. Create an insert policy for authenticated users on `agent_tasks`, or seed the rows once from the Supabase dashboard/SQL editor.');
+                            return;
+                        }
+                        throw seedErr;
+                    }
+                    data = seeded || [];
+                }
+
+                tasksData = data;
+                renderTasksContent();
+            } catch (err) {
+                console.error('Tasks fetch failed:', err);
+                container.innerHTML = tasksErrorHTML(err.message || 'Unable to load tasks') + tasksSkeletonHTML();
+            }
+        }
+
+        // ── Drag and Drop ───────────────────────────────
+        let draggedTaskId = null;
+
+        function onTaskDragStart(e, taskId) {
+            draggedTaskId = taskId;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', taskId);
+        }
+
+        function onTaskDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+            draggedTaskId = null;
+        }
+
+        function onTaskDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const col = e.target.closest('.kanban-column');
+            if (col) col.classList.add('drag-over');
+        }
+
+        function onTaskDragLeave(e) {
+            const col = e.target.closest('.kanban-column');
+            if (col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+        }
+
+        async function onTaskDrop(e, newStatus) {
+            e.preventDefault();
+            const col = e.target.closest('.kanban-column');
+            if (col) col.classList.remove('drag-over');
+
+            const taskId = draggedTaskId || e.dataTransfer.getData('text/plain');
+            if (!taskId) return;
+
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task || task.status === newStatus) return;
+
+            const previous = { status: task.status, completed: task.completed };
+
+            // Optimistic update
+            task.status = newStatus;
+            task.completed = newStatus === 'done';
+            renderTasksContent();
+
+            // Persist
+            try {
+                const sb = getSupabase();
+                const { error } = await sb.from('agent_tasks').update({
+                    status: newStatus,
+                    completed: newStatus === 'done'
+                }).eq('id', taskId);
+                if (error) throw error;
+            } catch (err) {
+                Object.assign(task, previous);
+                renderTasksContent();
+                console.error('Failed to update task status:', err);
+                alert('Could not move task in Supabase. The board was reverted.');
+            }
+        }
+
+        // ── Task checkbox ───────────────────────────────
+        async function toggleTaskDone(e, taskId) {
+            e.stopPropagation();
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task) return;
+
+            const previous = { status: task.status, completed: task.completed };
+            if (task.status === 'done') {
+                task.status = 'todo';
+                task.completed = false;
+            } else {
+                task.status = 'done';
+                task.completed = true;
+            }
+            renderTasksContent();
+
+            try {
+                const sb = getSupabase();
+                const { error } = await sb.from('agent_tasks').update({
+                    status: task.status,
+                    completed: task.completed
+                }).eq('id', taskId);
+                if (error) throw error;
+            } catch (err) {
+                Object.assign(task, previous);
+                renderTasksContent();
+                console.error('Failed to toggle task:', err);
+                alert('Could not update task completion in Supabase. The board was reverted.');
+            }
+        }
+
+        // ── Three-dot menu ──────────────────────────────
+        function toggleTaskMenu(e, taskId) {
+            e.stopPropagation();
+            // Close all other menus
+            document.querySelectorAll('.kanban-dropdown').forEach(d => { if (d.id !== `task-menu-${taskId}`) d.style.display = 'none'; });
+            const menu = document.getElementById(`task-menu-${taskId}`);
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Close menus on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.kanban-menu-btn')) {
+                document.querySelectorAll('.kanban-dropdown').forEach(d => d.style.display = 'none');
+            }
+        });
+
+        // ── Add Task ────────────────────────────────────
+        function showAddTaskForm(status) {
+            const area = document.getElementById(`add-task-area-${status}`);
+            if (!area) return;
+            area.innerHTML = addTaskFormHTML(status);
+        }
+
+        function cancelAddTask(status) {
+            const area = document.getElementById(`add-task-area-${status}`);
+            if (area) area.innerHTML = '';
+        }
+
+        async function saveNewTask(status) {
+            const title = document.getElementById(`add-title-${status}`)?.value?.trim();
+            const agent = document.getElementById(`add-agent-${status}`)?.value;
+            const category = document.getElementById(`add-category-${status}`)?.value;
+            const priority = document.getElementById(`add-priority-${status}`)?.value;
+            const track = document.getElementById(`add-track-${status}`)?.value;
+            const due = document.getElementById(`add-due-${status}`)?.value || null;
+
+            if (!title || !agent || !category || !priority || !track) return;
+
+            const newTask = {
+                title,
+                agent_name: agent,
+                role: AGENT_ROLES[agent] || 'User',
+                category,
+                priority,
+                track_status: track,
+                status,
+                completed: status === 'done',
+                due_date: due,
+            };
+
+            try {
+                const sb = getSupabase();
+                const { data, error } = await sb.from('agent_tasks').insert([newTask]).select();
+                if (error) throw error;
+                if (data && data[0]) tasksData.push(data[0]);
+                renderTasksContent();
+            } catch (err) {
+                console.error('Failed to add task:', err);
+            }
+        }
+
+        // ── Edit Modal ──────────────────────────────────
+        function openEditModal(taskId) {
+            // Close dropdown
+            document.querySelectorAll('.kanban-dropdown').forEach(d => d.style.display = 'none');
+
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task) return;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'task-modal-overlay';
+            overlay.id = 'task-edit-overlay';
+            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+            const agentOptions = ['Mira', 'Ari', 'Noah', 'Lena', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
+            const catOptions = ['Design', 'Architecture', 'Development', 'Review'].map(c => `<option value="${c}" ${task.category === c ? 'selected' : ''}>${c}</option>`).join('');
+            const priOptions = ['Urgent', 'High', 'Normal', 'Low'].map(p => `<option value="${p}" ${task.priority === p ? 'selected' : ''}>${p}</option>`).join('');
+            const trackOptions = ['On Track', 'At Risk', 'Off Track'].map(t2 => `<option value="${t2}" ${task.track_status === t2 ? 'selected' : ''}>${t2}</option>`).join('');
+
+            overlay.innerHTML = `
+                <div class="task-modal">
+                    <h3>Edit Task</h3>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <input class="kanban-form-input" id="edit-title" value="${task.title}" placeholder="Title" />
+                        <select class="kanban-form-select" id="edit-agent">${agentOptions}</select>
+                        <select class="kanban-form-select" id="edit-category">${catOptions}</select>
+                        <select class="kanban-form-select" id="edit-priority">${priOptions}</select>
+                        <select class="kanban-form-select" id="edit-track">${trackOptions}</select>
+                        <input class="kanban-form-input" type="date" id="edit-due" value="${task.due_date || ''}" />
+                        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+                            <button class="kanban-form-btn secondary" onclick="document.getElementById('task-edit-overlay').remove()">Cancel</button>
+                            <button class="kanban-form-btn primary" onclick="saveEditTask('${taskId}')">Save</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+        }
+
+        async function saveEditTask(taskId) {
+            const title = document.getElementById('edit-title')?.value?.trim();
+            const agent = document.getElementById('edit-agent')?.value;
+            const category = document.getElementById('edit-category')?.value;
+            const priority = document.getElementById('edit-priority')?.value;
+            const track = document.getElementById('edit-track')?.value;
+            const due = document.getElementById('edit-due')?.value || null;
+
+            if (!title) return;
+
+            const updates = {
+                title,
+                agent_name: agent,
+                role: AGENT_ROLES[agent] || 'User',
+                category,
+                priority,
+                track_status: track,
+                due_date: due,
+            };
+
+            const task = tasksData.find(t => t.id === taskId);
+            const previous = task ? { ...task } : null;
+
+            // Optimistic update
+            if (task) Object.assign(task, updates);
+            document.getElementById('task-edit-overlay')?.remove();
+            renderTasksContent();
+
+            try {
+                const sb = getSupabase();
+                const { error } = await sb.from('agent_tasks').update(updates).eq('id', taskId);
+                if (error) throw error;
+            } catch (err) {
+                if (task && previous) Object.assign(task, previous);
+                renderTasksContent();
+                console.error('Failed to edit task:', err);
+                alert('Could not save task edits to Supabase. The board was reverted.');
+            }
+        }
+
+        // ── Delete Task ─────────────────────────────────
+        async function deleteTask(taskId) {
+            document.querySelectorAll('.kanban-dropdown').forEach(d => d.style.display = 'none');
+            if (!confirm('Delete this task?')) return;
+
+            const previousTasks = [...tasksData];
+            tasksData = tasksData.filter(t => t.id !== taskId);
+            renderTasksContent();
+
+            try {
+                const sb = getSupabase();
+                const { error } = await sb.from('agent_tasks').delete().eq('id', taskId);
+                if (error) throw error;
+            } catch (err) {
+                tasksData = previousTasks;
+                renderTasksContent();
+                console.error('Failed to delete task:', err);
+                alert('Could not delete task from Supabase. The board was reverted.');
+            }
+        }
 
         // Check auth on load
         checkAuth();
