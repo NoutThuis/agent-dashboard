@@ -2021,6 +2021,16 @@
 
                 if (sub) sub.textContent = issues.length > 0 ? issues.join(' · ') + ` · ${time}` : `Last checked: ${time}`;
             })();
+
+            // Re-check system status every 30 seconds while on dashboard tab
+            if (!window._dashHealthInterval) {
+                window._dashHealthInterval = setInterval(() => {
+                    const panel = document.getElementById('panel-dashboard');
+                    if (panel && panel.classList.contains('active')) {
+                        loadDashboardTab();
+                    }
+                }, 30000);
+            }
         }
 
         // ── Main Data Loader ────────────────────────────
