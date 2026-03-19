@@ -1072,9 +1072,9 @@
                             <div style="width:6px;height:6px;border-radius:50%;background:#34D399;box-shadow:0 0 6px rgba(52,211,153,0.5);" id="mcStatusDot"></div>
                             <span style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);" id="mcStatusText">Status: Online</span>
                         </div>
-                        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;" id="mcActivity">Session: Idle — awaiting instructions</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;" id="mcActivity">Gateway: Running — awaiting instructions</div>
                         <div style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
-                            <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);">Session Uptime</span>
+                            <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);">Gateway Uptime</span>
                             <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);" id="mcUptimeLabel">—</span>
                         </div>
                         <div style="width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden;">
@@ -1191,10 +1191,9 @@
         }
 
         // ── Mission Control — Jarvis System Status ──────
-        // TODO: Connect to real OpenClaw/Jarvis system status API
         (function initMissionControl() {
-            const HEARTBEAT_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-            const sessionStart = Date.now();
+            let gatewayStartMs = null;
+            let heartbeatIntervalMs = 30 * 60 * 1000;
             let lastHeartbeatTs = null;
 
             // Clock (every second)
@@ -1205,25 +1204,29 @@
             setInterval(updateMCTime, 1000);
             updateMCTime();
 
-            // Session uptime (every second)
+            // Gateway uptime (every second)
             function updateUptime() {
                 const el = document.getElementById('mcUptimeLabel');
+                const bar = document.getElementById('mcUptimeBar');
                 if (!el) return;
-                const diff = Math.floor((Date.now() - sessionStart) / 1000);
-                const h = Math.floor(diff / 3600);
+                if (!gatewayStartMs) { el.textContent = 'Loading…'; return; }
+                const diff = Math.floor((Date.now() - gatewayStartMs) / 1000);
+                const d = Math.floor(diff / 86400);
+                const h = Math.floor((diff % 86400) / 3600);
                 const m = Math.floor((diff % 3600) / 60);
                 const s = diff % 60;
-                el.textContent = h > 0 ? `${h}h ${m}m ${s}s` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+                if (d > 0) el.textContent = `${d}d ${h}h ${m}m`;
+                else if (h > 0) el.textContent = `${h}h ${m}m ${s}s`;
+                else el.textContent = `${m}m ${s}s`;
             }
             setInterval(updateUptime, 1000);
-            updateUptime();
 
             // Heartbeat countdown (every second)
             function updateCountdown() {
                 const el = document.getElementById('mcCountdown');
                 if (!el) return;
                 if (!lastHeartbeatTs) { el.textContent = '—'; return; }
-                const nextCheck = lastHeartbeatTs + HEARTBEAT_INTERVAL_MS;
+                const nextCheck = lastHeartbeatTs + heartbeatIntervalMs;
                 const remaining = Math.max(0, Math.floor((nextCheck - Date.now()) / 1000));
                 if (remaining <= 0) { el.textContent = 'Now'; return; }
                 const m = Math.floor(remaining / 60);
@@ -1232,16 +1235,38 @@
             }
             setInterval(updateCountdown, 1000);
 
-            // Simulate last heartbeat based on 30m intervals from the top of the hour
-            function estimateLastHeartbeat() {
-                const now = Date.now();
-                const d = new Date(now);
-                d.setMinutes(d.getMinutes() - (d.getMinutes() % 30), 0, 0);
+            // Estimate last heartbeat from 30m-interval grid
+            function estimateLastHeartbeat(intervalMin) {
+                const d = new Date();
+                d.setMinutes(d.getMinutes() - (d.getMinutes() % intervalMin), 0, 0);
                 lastHeartbeatTs = d.getTime();
             }
-            estimateLastHeartbeat();
-            // Re-estimate every 30 seconds
-            setInterval(estimateLastHeartbeat, 30000);
+
+            // Fetch system-status.json for real gateway start time
+            async function fetchSystemStatus() {
+                try {
+                    const res = await fetch('system-status.json?t=' + Date.now());
+                    if (!res.ok) throw new Error('fetch failed');
+                    const data = await res.json();
+                    if (data.gateway_started) {
+                        gatewayStartMs = new Date(data.gateway_started).getTime();
+                    }
+                    if (data.heartbeat_interval_min) {
+                        heartbeatIntervalMs = data.heartbeat_interval_min * 60 * 1000;
+                    }
+                    estimateLastHeartbeat(data.heartbeat_interval_min || 30);
+                    updateUptime();
+                } catch (e) {
+                    console.warn('Mission Control: could not load system-status.json', e);
+                    // Fallback: estimate gateway started ~2 days ago
+                    gatewayStartMs = Date.now() - 2 * 86400 * 1000;
+                    estimateLastHeartbeat(30);
+                }
+            }
+
+            fetchSystemStatus();
+            // Re-fetch every 5 minutes in case it updates
+            setInterval(fetchSystemStatus, 5 * 60 * 1000);
         })();
 
         function showLogin() {
