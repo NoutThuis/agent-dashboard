@@ -158,17 +158,18 @@
             pointer-events: none;
         }
 
-        /* ── Tab Navigation ──────────────────────────── */
+        /* ── Tab Navigation (Sidebar) ─────────────────── */
         .tab-list {
             display: flex;
+            flex-direction: column;
             gap: 4px;
-            padding: 4px;
+            padding: 6px;
         }
 
         .tab-btn {
             position: relative;
             z-index: 10;
-            padding: 10px 24px;
+            padding: 11px 20px;
             font-family: 'Inter', sans-serif;
             font-size: 14px;
             font-weight: 500;
@@ -180,6 +181,7 @@
             transition: color 300ms ease, background 300ms ease, box-shadow 300ms ease;
             white-space: nowrap;
             user-select: none;
+            text-align: left;
         }
 
         .tab-btn:hover {
@@ -469,6 +471,7 @@
 
         .app-container {
             display: none;
+            flex-direction: row;
         }
 
         .app-container.visible {
@@ -928,57 +931,63 @@
     </div>
 
     <!-- Main Content -->
-    <div class="relative z-10 min-h-screen flex-col px-8 py-6 app-container" id="appContainer" style="min-width: 1280px;">
+    <div class="relative z-10 min-h-screen flex app-container" id="appContainer" style="min-width: 1280px;">
 
-        <!-- Header -->
-        <header class="flex items-center justify-between mb-6 card-animate">
-            <div class="flex items-center gap-4">
-                <h1 class="text-2xl font-semibold tracking-tight text-primary">Agent OS</h1>
-                <span class="text-secondary text-sm font-medium" style="opacity: 0.4;">v0.1</span>
+        <!-- Sidebar -->
+        <aside class="flex flex-col py-6 px-4 card-animate" style="width: 220px; min-width: 220px; position: sticky; top: 0; height: 100vh;">
+            <!-- Logo / Title -->
+            <div class="flex items-center gap-3 px-3 mb-8">
+                <h1 class="text-xl font-semibold tracking-tight text-primary">Agent OS</h1>
+                <span class="text-secondary text-xs font-medium" style="opacity: 0.4;">v0.1</span>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-2 h-2 rounded-full" style="background: #34D399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);"></div>
-                    <span class="text-secondary text-sm">System Online</span>
+
+            <!-- Navigation -->
+            <nav class="glass-nav flex-1 card-animate" style="animation-delay: 100ms; position: relative; z-index: 20;">
+                <div class="tab-list" id="tabList">
+                    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+                    <button class="tab-btn" data-tab="content">Content</button>
+                    <button class="tab-btn" data-tab="tasks">Tasks</button>
+                    <button class="tab-btn" data-tab="settings">Settings</button>
+                    <button class="tab-btn" data-tab="agents">Agents</button>
                 </div>
-                <button onclick="signOut()" class="refresh-btn" style="font-size:12px;padding:5px 12px;">Sign Out</button>
-            </div>
-        </header>
+            </nav>
 
-        <!-- Navigation -->
-        <nav class="glass-nav mb-8 card-animate" style="animation-delay: 100ms; position: relative; z-index: 20;">
-            <div class="tab-list" id="tabList">
-                <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-                <button class="tab-btn" data-tab="content">Content</button>
-                <button class="tab-btn" data-tab="tasks">Tasks</button>
-                <button class="tab-btn" data-tab="settings">Settings</button>
-                <button class="tab-btn" data-tab="agents">Agents</button>
+            <!-- Bottom: Status & Sign Out -->
+            <div class="mt-6 px-3 flex flex-col gap-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full" style="background: #34D399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);"></div>
+                    <span class="text-secondary text-xs">System Online</span>
+                </div>
+                <button onclick="signOut()" class="refresh-btn" style="font-size:12px;padding:5px 12px;width:100%;justify-content:center;">Sign Out</button>
             </div>
-        </nav>
+        </aside>
 
-        <!-- Tab Panels -->
-        <main class="flex-1">
-            <div id="panel-dashboard" class="tab-panel active">
-                <!-- Dashboard content will go here -->
-            </div>
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col py-6 px-8 overflow-y-auto" style="min-height: 100vh;">
+            <!-- Tab Panels -->
+            <main class="flex-1">
+                <div id="panel-dashboard" class="tab-panel active">
+                    <!-- Dashboard content will go here -->
+                </div>
 
-            <div id="panel-content" class="tab-panel">
-                <!-- Content tab will go here -->
-            </div>
+                <div id="panel-content" class="tab-panel">
+                    <!-- Content tab will go here -->
+                </div>
 
-            <div id="panel-tasks" class="tab-panel">
-                <div id="tasks-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
-            </div>
+                <div id="panel-tasks" class="tab-panel">
+                    <div id="tasks-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
+                </div>
 
-            <div id="panel-settings" class="tab-panel">
-                <!-- Settings tab will go here -->
-            </div>
+                <div id="panel-settings" class="tab-panel">
+                    <!-- Settings tab will go here -->
+                </div>
 
-            <div id="panel-agents" class="tab-panel">
-                <!-- Agents tab — populated by JS -->
-                <div id="agents-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
-            </div>
-        </main>
+                <div id="panel-agents" class="tab-panel">
+                    <!-- Agents tab — populated by JS -->
+                    <div id="agents-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
+                </div>
+            </main>
+        </div>
 
     </div>
 
