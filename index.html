@@ -1746,14 +1746,95 @@
             document.getElementById('intel-deploy-overlay')?.remove();
         }
 
-        function confirmDeployUseCase() {
-            closeIntelDeployModal();
-            showIntelToast('Use case deployed — 3 tasks created in Tasks tab');
+        function buildUseCaseTasks(item) {
+            const defaults = {
+                status: 'todo',
+                completed: false,
+                track_status: 'On Track',
+                priority: item.momentum >= 90 ? 'Urgent' : item.momentum >= 80 ? 'High' : 'Normal',
+            };
+
+            const plans = {
+                'ui-library-generator': [
+                    { title: `Design component direction — ${item.title}`, agent_name: 'Mira', category: 'Design' },
+                    { title: `Define system architecture — ${item.title}`, agent_name: 'Ari', category: 'Architecture' },
+                    { title: `Build first component set — ${item.title}`, agent_name: 'Noah', category: 'Development' },
+                ],
+                'landing-ab-pipeline': [
+                    { title: `Design variant set — ${item.title}`, agent_name: 'Mira', category: 'Design' },
+                    { title: `Define experiment structure — ${item.title}`, agent_name: 'Ari', category: 'Architecture' },
+                    { title: `Build A/B landing pages — ${item.title}`, agent_name: 'Noah', category: 'Development' },
+                    { title: `Review metrics + experiment quality — ${item.title}`, agent_name: 'Lena', category: 'Review' },
+                ],
+                'dashboard-template-factory': [
+                    { title: `Design dashboard shell — ${item.title}`, agent_name: 'Mira', category: 'Design' },
+                    { title: `Build reusable dashboard template — ${item.title}`, agent_name: 'Noah', category: 'Development' },
+                    { title: `Review delivery polish — ${item.title}`, agent_name: 'Lena', category: 'Review', priority: 'Normal' },
+                ],
+                'seo-optimizer': [
+                    { title: `Audit content opportunities — ${item.title}`, agent_name: 'Lena', category: 'Review' },
+                    { title: `Prototype rewrite workflow — ${item.title}`, agent_name: 'Manual', category: 'Architecture', priority: 'Normal' },
+                ],
+                'design-system-docs': [
+                    { title: `Map component patterns — ${item.title}`, agent_name: 'Ari', category: 'Architecture' },
+                    { title: `Design docs presentation — ${item.title}`, agent_name: 'Mira', category: 'Design' },
+                    { title: `Review examples + guidance — ${item.title}`, agent_name: 'Lena', category: 'Review' },
+                ],
+                'saas-cloner': [
+                    { title: `Analyze reference UI — ${item.title}`, agent_name: 'Mira', category: 'Design' },
+                    { title: `Rebuild branded frontend — ${item.title}`, agent_name: 'Noah', category: 'Development' },
+                    { title: `Review interaction fidelity — ${item.title}`, agent_name: 'Lena', category: 'Review', priority: 'Normal' },
+                ],
+            };
+
+            return (plans[item.id] || []).map((task, index) => ({
+                ...defaults,
+                ...task,
+                role: AGENT_ROLES[task.agent_name] || 'User',
+                metadata: {
+                    source: 'intelligence-tab',
+                    use_case_id: item.id,
+                    use_case_title: item.title,
+                    deploy_index: index + 1,
+                    source_label: item.sourceLabel,
+                    momentum: item.momentum,
+                }
+            }));
+        }
+
+        async function confirmDeployUseCase() {
+            const item = INTELLIGENCE_USE_CASES.find(i => i.id === intelligenceSelectedId);
+            if (!item) return;
+
+            const deployTasks = buildUseCaseTasks(item);
+            if (!deployTasks.length) {
+                closeIntelDeployModal();
+                showIntelToast('No deployment plan found for this use case');
+                return;
+            }
+
+            try {
+                const sb = getSupabase();
+                const { data, error } = await sb.from('agent_tasks').insert(deployTasks).select();
+                if (error) throw error;
+
+                if (Array.isArray(data) && data.length) {
+                    tasksData = [...tasksData, ...data];
+                }
+
+                closeIntelDeployModal();
+                showIntelToast(`Use case deployed — ${deployTasks.length} tasks created in Tasks tab`);
+            } catch (err) {
+                console.error('Failed to deploy intelligence use case:', err);
+                closeIntelDeployModal();
+                showIntelToast('Could not deploy to Tasks — check Supabase/RLS');
+            }
         }
 
         function openIntelDeployModal() {
             const item = INTELLIGENCE_USE_CASES.find(i => i.id === intelligenceSelectedId);
             if (!item) return;
+            const deployTasks = buildUseCaseTasks(item);
             closeIntelDeployModal();
             const overlay = document.createElement('div');
             overlay.id = 'intel-deploy-overlay';
@@ -1765,7 +1846,7 @@
                     <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:18px;">${item.title}</div>
                     <div class="glass-card" style="padding:18px;margin-bottom:18px;background:rgba(255,255,255,0.04);">
                         <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Deployment Plan</div>
-                        <div style="font-size:14px;color:rgba(255,255,255,0.76);line-height:1.7;">Agents: ${item.deployAgents.join(', ')}<br>Estimated task breakdown: ${item.deployTasks} tasks</div>
+                        <div style="font-size:14px;color:rgba(255,255,255,0.76);line-height:1.7;">Agents: ${item.deployAgents.join(', ')}<br>Estimated task breakdown: ${deployTasks.length} tasks</div>
                     </div>
                     <div style="display:flex;justify-content:flex-end;gap:10px;">
                         <button class="task-detail-action-btn" onclick="closeIntelDeployModal()">Cancel</button>
