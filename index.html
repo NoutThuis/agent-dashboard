@@ -686,11 +686,21 @@
             color: rgba(255, 255, 255, 0.9);
         }
 
+        .tasks-board-shell {
+            position: relative;
+            min-height: 400px;
+        }
+
         .kanban-board {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 24px;
             min-height: 400px;
+            transition: filter 300ms ease;
+        }
+
+        .tasks-board-shell.detail-open .kanban-board {
+            filter: brightness(0.82);
         }
 
         .kanban-column {
@@ -965,6 +975,162 @@
 
         .kanban-form-btn:hover {
             opacity: 0.85;
+        }
+
+        .task-detail-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 300ms ease;
+            border-radius: 28px;
+            z-index: 60;
+        }
+
+        .tasks-board-shell.detail-open .task-detail-overlay {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .task-detail-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: min(480px, 100%);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(44px) saturate(1.8);
+            -webkit-backdrop-filter: blur(44px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-right: none;
+            border-radius: 20px 0 0 20px;
+            box-shadow: -18px 0 48px rgba(0, 0, 0, 0.38), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            transform: translateX(100%);
+            transition: transform 300ms ease;
+            z-index: 70;
+        }
+
+        .task-detail-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.28) 20%, rgba(255, 255, 255, 0.28) 80%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .tasks-board-shell.detail-open .task-detail-panel {
+            transform: translateX(0);
+        }
+
+        .task-detail-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 28px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .task-detail-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-detail-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .task-detail-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .task-detail-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .task-detail-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: rgba(255, 255, 255, 0.38);
+        }
+
+        .task-detail-value {
+            font-size: 13px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.82);
+            word-break: break-word;
+        }
+
+        .task-detail-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.72);
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .task-detail-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .task-detail-action-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding: 20px 28px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .task-detail-action-btn {
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.85);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .task-detail-action-btn:hover {
+            background: rgba(255, 255, 255, 0.11);
+            transform: translateY(-1px);
+        }
+
+        .task-detail-action-btn.danger {
+            color: #FCA5A5;
+            border-color: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        .task-detail-action-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.14);
         }
 
         /* ── Edit Modal ──────────────────────────────── */
@@ -2120,6 +2286,7 @@
         let tasksChart = null;
         let tasksCategoryFilter = 'All';
         let tasksPriorityFilter = 'All';
+        let activeTaskDetailId = null;
 
         const SEED_TASKS = [
             { title: 'Design hero section layout', agent_name: 'Mira', role: 'Frontend Designer', category: 'Design', priority: 'High', track_status: 'On Track', status: 'todo', completed: false },
@@ -2217,6 +2384,189 @@
             });
         }
 
+        function escapeHTML(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatTaskDate(value, fallback = 'N/A') {
+            if (!value) return fallback;
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return fallback;
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function formatTaskDateShort(value, fallback = 'No due date') {
+            if (!value) return fallback;
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return fallback;
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        let _taskCardDownPos = null;
+        let _taskCardDragged = false;
+
+        function taskCardMouseDown(e) {
+            _taskCardDownPos = { x: e.clientX, y: e.clientY };
+            _taskCardDragged = false;
+        }
+
+        function taskCardMouseUp(e, taskId) {
+            // Ignore clicks on checkbox, menu button, or dropdown items
+            if (e.target.closest('.kanban-card-checkbox') || e.target.closest('.kanban-menu-btn') || e.target.closest('.kanban-dropdown')) return;
+
+            // If a drag happened, don't open
+            if (_taskCardDragged) return;
+
+            // Check distance from mousedown to mouseup (threshold: 6px)
+            if (_taskCardDownPos) {
+                const dx = Math.abs(e.clientX - _taskCardDownPos.x);
+                const dy = Math.abs(e.clientY - _taskCardDownPos.y);
+                if (dx > 6 || dy > 6) return;
+            }
+
+            openTaskDetail(taskId);
+        }
+
+        function openTaskDetail(taskId) {
+            activeTaskDetailId = taskId;
+            renderTasksContent();
+        }
+
+        function closeTaskDetail() {
+            if (!activeTaskDetailId) return;
+            activeTaskDetailId = null;
+            renderTasksContent();
+        }
+
+        function renderMetadataContent(metadata) {
+            if (!metadata) {
+                return '<div style="font-size:13px;color:rgba(255,255,255,0.42);">No metadata recorded</div>';
+            }
+
+            const data = typeof metadata === 'string' ? (() => {
+                try { return JSON.parse(metadata); } catch { return metadata; }
+            })() : metadata;
+
+            if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+                return `<div class="task-detail-value" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHTML(typeof data === 'string' ? data : JSON.stringify(data, null, 2))}</div>`;
+            }
+
+            const entries = Object.entries(data);
+            if (!entries.length) {
+                return '<div style="font-size:13px;color:rgba(255,255,255,0.42);">No metadata recorded</div>';
+            }
+
+            return `
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    ${entries.map(([key, val]) => `
+                        <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                            <div class="task-detail-label" style="font-size:10px;">${escapeHTML(key)}</div>
+                            <div class="task-detail-value" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHTML(typeof val === 'string' ? val : JSON.stringify(val, null, 2))}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderTaskDetailPanel() {
+            const task = tasksData.find(t => t.id === activeTaskDetailId);
+            if (!task) return '';
+
+            const agentColor = AGENT_COLORS[task.agent_name] || '#9CA3AF';
+            const catColor = CAT_COLORS[task.category] || '#6B7280';
+            const priColor = PRI_COLORS[task.priority] || '#3B82F6';
+            const trackColor = TRACK_COLORS[task.track_status] || '#6B7280';
+            const statusMeta = TASK_STATUS_META[task.status] || { title: 'Unknown', color: '#6B7280' };
+            const output = task.output && String(task.output).trim();
+            const errorMessage = task.error_message && String(task.error_message).trim();
+            const hasMetadata = task.metadata && (typeof task.metadata === 'string' ? task.metadata.trim() : Object.keys(task.metadata || {}).length);
+
+            const infoItems = [
+                {
+                    label: 'Agent',
+                    value: `<div style="display:flex;align-items:center;gap:8px;"><div style="width:9px;height:9px;border-radius:50%;background:${agentColor};box-shadow:0 0 8px ${hexToRgba(agentColor, 0.45)};"></div><span>${escapeHTML(task.agent_name || 'Unknown')}</span><span style="color:rgba(255,255,255,0.45);">•</span><span style="color:rgba(255,255,255,0.58);">${escapeHTML(task.role || AGENT_ROLES[task.agent_name] || 'N/A')}</span></div>`
+                },
+                { label: 'Category', value: pillHTML(task.category || 'N/A', catColor) },
+                { label: 'Model Used', value: escapeHTML(task.model_used || 'N/A') },
+                { label: 'Created', value: escapeHTML(formatTaskDate(task.created_at)) },
+                { label: 'Updated', value: escapeHTML(formatTaskDate(task.updated_at)) },
+                { label: 'Due Date', value: escapeHTML(formatTaskDateShort(task.due_date)) },
+                { label: 'Completed', value: task.completed ? '<span style="color:#10B981;font-weight:600;">✓ Yes</span>' : '<span style="color:#F87171;font-weight:600;">✕ No</span>' },
+            ];
+
+            return `
+                <div class="task-detail-overlay" onclick="closeTaskDetail()"></div>
+                <aside class="task-detail-panel" role="dialog" aria-modal="true" aria-label="Task detail panel">
+                    <div class="task-detail-scroll">
+                        <div class="task-detail-section">
+                            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+                                <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+                                    <h3 style="font-size:28px;line-height:1.2;font-weight:700;color:rgba(255,255,255,0.95);word-break:break-word;">${escapeHTML(task.title || 'Untitled task')}</h3>
+                                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                                        ${pillHTML(statusMeta.title, statusMeta.color)}
+                                        ${pillHTML(task.priority || 'N/A', priColor)}
+                                        ${pillHTML(task.track_status || 'N/A', trackColor)}
+                                    </div>
+                                </div>
+                                <button class="task-detail-close" onclick="closeTaskDetail()">✕</button>
+                            </div>
+                        </div>
+
+                        <div class="task-detail-section">
+                            <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.84);">Task Info</div>
+                            <div class="task-detail-glass task-detail-info-grid">
+                                ${infoItems.map(item => `
+                                    <div class="task-detail-info-item">
+                                        <div class="task-detail-label">${item.label}</div>
+                                        <div class="task-detail-value">${item.value}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="task-detail-section">
+                            <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.84);"><span>📄</span><span>Output</span></div>
+                            <div class="task-detail-glass" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.7;color:${output ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.42)'};white-space:pre-wrap;">${output ? escapeHTML(output) : 'No output recorded'}</div>
+                        </div>
+
+                        ${errorMessage ? `
+                            <div class="task-detail-section">
+                                <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#FCA5A5;"><span>⚠️</span><span>Error</span></div>
+                                <div class="task-detail-glass" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.16);color:rgba(254,202,202,0.92);font-size:13px;line-height:1.7;white-space:pre-wrap;">${escapeHTML(errorMessage)}</div>
+                            </div>
+                        ` : ''}
+
+                        ${hasMetadata ? `
+                            <div class="task-detail-section">
+                                <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.84);"><span>🔧</span><span>Metadata</span></div>
+                                <div class="task-detail-glass">${renderMetadataContent(task.metadata)}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="task-detail-action-row">
+                        <button class="task-detail-action-btn" onclick="openEditModal('${task.id}')">Edit</button>
+                        <button class="task-detail-action-btn danger" onclick="deleteTask('${task.id}')">Delete</button>
+                    </div>
+                </aside>
+            `;
+        }
+
         function renderTaskCard(task) {
             const agentColor = AGENT_COLORS[task.agent_name] || '#9CA3AF';
             const catColor = CAT_COLORS[task.category] || '#6B7280';
@@ -2227,8 +2577,11 @@
 
             return `
                 <div class="kanban-card" draggable="true" data-task-id="${task.id}"
+                     onmousedown="taskCardMouseDown(event)"
+                     onmouseup="taskCardMouseUp(event, '${task.id}')"
                      ondragstart="onTaskDragStart(event, '${task.id}')"
-                     ondragend="onTaskDragEnd(event)">
+                     ondragend="onTaskDragEnd(event)"
+                     style="cursor:pointer;">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
                         <div style="display:flex;align-items:center;gap:8px;">
                             <div style="width:8px;height:8px;border-radius:50%;background:${agentColor};box-shadow:0 0 6px ${hexToRgba(agentColor, 0.5)};"></div>
@@ -2307,21 +2660,24 @@
             }));
 
             return `
-                <div class="kanban-board">
-                    ${columns.map(col => `
-                        <div class="kanban-column" data-status="${col.status}"
-                             ondragover="onTaskDragOver(event)" ondragleave="onTaskDragLeave(event)" ondrop="onTaskDrop(event, '${col.status}')">
-                            <div class="kanban-col-header">
-                                <span class="kanban-col-title">${col.title}</span>
-                                <span class="kanban-col-count">${col.tasks.length}</span>
+                <div class="tasks-board-shell ${activeTaskDetailId ? 'detail-open' : ''}">
+                    <div class="kanban-board">
+                        ${columns.map(col => `
+                            <div class="kanban-column" data-status="${col.status}"
+                                 ondragover="onTaskDragOver(event)" ondragleave="onTaskDragLeave(event)" ondrop="onTaskDrop(event, '${col.status}')">
+                                <div class="kanban-col-header">
+                                    <span class="kanban-col-title">${col.title}</span>
+                                    <span class="kanban-col-count">${col.tasks.length}</span>
+                                </div>
+                                <div id="kanban-cards-${col.status}">
+                                    ${col.tasks.map(t => renderTaskCard(t)).join('')}
+                                </div>
+                                <div id="add-task-area-${col.status}"></div>
+                                <button class="kanban-add-btn" onclick="showAddTaskForm('${col.status}')">+ Add Task</button>
                             </div>
-                            <div id="kanban-cards-${col.status}">
-                                ${col.tasks.map(t => renderTaskCard(t)).join('')}
-                            </div>
-                            <div id="add-task-area-${col.status}"></div>
-                            <button class="kanban-add-btn" onclick="showAddTaskForm('${col.status}')">+ Add Task</button>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
+                    ${renderTaskDetailPanel()}
                 </div>
             `;
         }
@@ -2397,6 +2753,9 @@
         function renderTasksContent() {
             const container = document.getElementById('tasks-container');
             if (!container) return;
+            if (activeTaskDetailId && !tasksData.some(t => t.id === activeTaskDetailId)) {
+                activeTaskDetailId = null;
+            }
             container.innerHTML = renderOverviewBar() + renderFilterBar() + renderTasksBoard();
             initTasksDonut();
         }
@@ -2469,6 +2828,7 @@
         let draggedTaskId = null;
 
         function onTaskDragStart(e, taskId) {
+            _taskCardDragged = true;
             draggedTaskId = taskId;
             e.target.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
