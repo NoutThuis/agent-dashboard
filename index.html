@@ -1685,11 +1685,59 @@
             }
         ];
 
+        const INTELLIGENCE_INGEST_BATCH = [
+            {
+                id: 'agent-handoff-console',
+                title: 'Agent Handoff Console',
+                sourceType: 'twitter',
+                sourceLabel: '@opsbuilder',
+                sourceBadge: 'Found on Twitter/X via @opsbuilder',
+                momentum: 83,
+                skillMatch: 91,
+                skillNote: 'Ari + Noah with Lena review',
+                trend: 69,
+                trendNote: 'showing up in agent ops threads',
+                complexity: 46,
+                complexityLabel: 'Medium — mostly orchestration UI work',
+                description: 'A control surface where one agent can hand work to another with context, status, and approval checkpoints. It would make multi-agent execution much easier to track inside a polished dashboard.\n\nThis fits well with your Agent OS direction because it turns invisible orchestration into something legible and manageable.',
+                preview: 'dashboard-wireframe',
+                discoveredAt: Date.now() - 20 * 60 * 1000,
+                unread: true,
+                bookmarked: false,
+                dismissed: false,
+                deployAgents: ['Ari', 'Noah', 'Lena'],
+                deployTasks: 3,
+            },
+            {
+                id: 'research-brief-generator',
+                title: 'Research Brief Generator for New Topics',
+                sourceType: 'reddit',
+                sourceLabel: 'Reddit r/LocalLLaMA',
+                sourceBadge: 'Found on Reddit r/LocalLLaMA',
+                momentum: 79,
+                skillMatch: 87,
+                skillNote: 'Strong Lena + Ari alignment',
+                trend: 74,
+                trendNote: 'active discussion in research tooling',
+                complexity: 38,
+                complexityLabel: 'Low — mostly structured synthesis',
+                description: 'Feed a new topic or paper cluster in, and agents produce a concise research brief: why it matters, main approaches, open questions, and useful next reads.\n\nThat would be directly useful for your physics and thesis-support direction, especially when exploring unfamiliar subfields fast.',
+                preview: 'docs-page',
+                discoveredAt: Date.now() - 35 * 60 * 1000,
+                unread: true,
+                bookmarked: false,
+                dismissed: false,
+                deployAgents: ['Lena', 'Ari'],
+                deployTasks: 3,
+            }
+        ];
+
         let intelligenceData = [...SEED_INTELLIGENCE_USE_CASES];
         let intelligenceSelectedId = intelligenceData[0].id;
         let intelligenceFilter = 'All';
         let intelligenceSort = 'Momentum Score';
         let intelligenceLoading = false;
+        let intelligenceRefreshing = false;
 
         function intelligenceRelativeTime(ts) {
             const diff = Math.max(0, Math.floor((Date.now() - ts) / 1000));
@@ -1722,6 +1770,34 @@
                 dismissed: row.dismissed ?? false,
                 deployAgents: Array.isArray(meta.deployAgents) ? meta.deployAgents : [],
                 deployTasks: meta.deployTasks || 0,
+            };
+        }
+
+        function intelligenceItemToRow(item) {
+            return {
+                id: item.id,
+                title: item.title,
+                source_type: item.sourceType,
+                source_label: item.sourceLabel,
+                source_badge: item.sourceBadge,
+                momentum_score: item.momentum,
+                skill_match_score: item.skillMatch,
+                skill_match_note: item.skillNote,
+                trend_score: item.trend,
+                trend_note: item.trendNote,
+                complexity_score: item.complexity,
+                complexity_label: item.complexityLabel,
+                description: item.description,
+                preview_kind: item.preview,
+                unread: item.unread,
+                bookmarked: item.bookmarked,
+                dismissed: item.dismissed,
+                discovered_at: new Date(item.discoveredAt).toISOString(),
+                metadata: {
+                    deployAgents: item.deployAgents,
+                    deployTasks: item.deployTasks,
+                    ingestedBy: 'dashboard-refresh',
+                },
             };
         }
 
@@ -1939,6 +2015,27 @@
             `;
         }
 
+        async function refreshIntelligenceFeed() {
+            intelligenceRefreshing = true;
+            renderIntelligenceTab();
+            try {
+                const sb = getSupabase();
+                if (!sb) throw new Error('Supabase SDK not loaded');
+
+                const rows = INTELLIGENCE_INGEST_BATCH.map(intelligenceItemToRow);
+                const { error } = await sb.from('agent_intelligence_items').upsert(rows, { onConflict: 'id' });
+                if (error) throw error;
+
+                showIntelToast(`Intelligence refreshed — ${rows.length} new items ingested`);
+                await loadIntelligenceTab();
+            } catch (err) {
+                console.error('Intelligence refresh failed:', err);
+                showIntelToast('Refresh failed — check Supabase permissions');
+                intelligenceRefreshing = false;
+                renderIntelligenceTab();
+            }
+        }
+
         function renderIntelligenceTab() {
             const container = document.getElementById('intelligence-container');
             if (!container) return;
@@ -1957,7 +2054,13 @@
                     <div>
                         <div style="font-size:14px;color:rgba(255,255,255,0.42);">AI-curated use cases ranked by momentum</div>
                     </div>
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
+                        <button class="refresh-btn ${intelligenceRefreshing ? 'spinning' : ''}" onclick="refreshIntelligenceFeed()" ${intelligenceRefreshing ? 'disabled' : ''} style="opacity:${intelligenceRefreshing ? 0.7 : 1};">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                            ${intelligenceRefreshing ? 'Refreshing…' : 'Refresh feed'}
+                        </button>
                         <select class="intel-select" onchange="intelligenceFilter=this.value;renderIntelligenceTab()">
                             <option ${intelligenceFilter === 'All' ? 'selected' : ''}>All</option>
                             <option ${intelligenceFilter === 'High Momentum' ? 'selected' : ''}>High Momentum</option>
@@ -2077,6 +2180,7 @@
             }
 
             intelligenceLoading = false;
+            intelligenceRefreshing = false;
             if (!intelligenceData.some(i => i.id === intelligenceSelectedId) && intelligenceData[0]) {
                 intelligenceSelectedId = intelligenceData[0].id;
             }
