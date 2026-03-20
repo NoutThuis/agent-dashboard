@@ -1143,80 +1143,7 @@
             background: rgba(239, 68, 68, 0.14);
         }
 
-        /* ── Cron Jobs Panel ─────────────────────────── */
-        .cron-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 300ms ease;
-            z-index: 200;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .cron-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .cron-panel-card {
-            width: min(580px, 92vw);
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-            background: #161B2E;
-            border: 1px solid rgba(255, 255, 255, 0.10);
-            border-radius: 24px;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
-            overflow: hidden;
-            transform: scale(0.95) translateY(12px);
-            opacity: 0;
-            transition: transform 300ms ease, opacity 300ms ease;
-            position: relative;
-        }
-
-        .cron-panel-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.18) 20%, rgba(255, 255, 255, 0.18) 80%, transparent 100%);
-            pointer-events: none;
-        }
-
-        .cron-overlay.open .cron-panel-card {
-            transform: scale(1) translateY(0);
-            opacity: 1;
-        }
-
-        .cron-panel-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding: 28px 28px 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .cron-job-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 16px;
-            padding: 18px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            transition: background 200ms ease;
-        }
-
-        .cron-job-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-        }
+        /* ── Cron Jobs Tab (no extra styles needed — uses glass-card) ── */
 
         /* ── Edit Modal ──────────────────────────────── */
         .task-modal-overlay {
@@ -1326,22 +1253,7 @@
                         <div style="font-size:12px;color:rgba(255,255,255,0.4);" id="mcActivity">Gateway: Running — awaiting instructions</div>
                     </div>
                     <div class="mc-divider"></div>
-                    <!-- Section 2: Cron Jobs -->
-                    <div class="mc-section">
-                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-                            <span style="font-size:14px;">🔄</span>
-                            <span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);">Cron Jobs</span>
-                            <span id="mcCronCount" style="background:rgba(124,58,237,0.2);color:#A78BFA;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;margin-left:4px;">4</span>
-                        </div>
-                        <div id="mcCronPreview" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
-                            <!-- Filled by JS -->
-                        </div>
-                        <div style="text-align:right;">
-                            <button onclick="openCronPanel()" style="background:none;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#7C3AED;cursor:pointer;padding:2px 0;transition:color 200ms ease;" onmouseover="this.style.color='#A78BFA'" onmouseout="this.style.color='#7C3AED'">View All →</button>
-                        </div>
-                    </div>
-                    <div class="mc-divider"></div>
-                    <!-- Section 3: Heartbeat & System -->
+                    <!-- Section 2: Heartbeat & System -->
                     <div class="mc-section">
                         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
                             <span style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.9);" id="mcCountdown">—</span>
@@ -1360,7 +1272,7 @@
                         </div>
                     </div>
                     <div class="mc-divider"></div>
-                    <!-- Section 4: Heartbeat log -->
+                    <!-- Section 3: Heartbeat log -->
                     <div class="mc-section" style="padding-bottom:2px;">
                         <div style="font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:0.02em;" id="mcHeartbeat">
                             HEARTBEAT_OK · No system events · <span id="mcTime"></span>
@@ -1377,6 +1289,7 @@
                     <button class="tab-btn" data-tab="tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tasks</button>
                     <button class="tab-btn" data-tab="settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
                     <button class="tab-btn" data-tab="agents"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agents</button>
+                    <button class="tab-btn" data-tab="crons"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Cron Jobs</button>
                 </div>
             </nav>
 
@@ -1423,6 +1336,10 @@
                 <div id="panel-agents" class="tab-panel">
                     <!-- Agents tab — populated by JS -->
                     <div id="agents-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
+                </div>
+
+                <div id="panel-crons" class="tab-panel">
+                    <div id="crons-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
                 </div>
             </main>
         </div>
@@ -1494,101 +1411,92 @@
             return `<span style="font-size:10px;font-weight:600;color:#EF4444;background:rgba(239,68,68,0.12);padding:2px 8px;border-radius:6px;">Failed</span>`;
         }
 
-        function renderMCCronPreview() {
-            const el = document.getElementById('mcCronPreview');
-            const countEl = document.getElementById('mcCronCount');
-            if (!el) return;
-            const active = CRON_JOBS.filter(c => c.status === 'active');
-            if (countEl) countEl.textContent = active.length;
-            const preview = CRON_JOBS.slice(0, 3);
-            el.innerHTML = preview.map(c => `
-                <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
-                    ${cronStatusDot(c.status)}
-                    <span style="font-size:12px;color:rgba(255,255,255,0.7);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.name}</span>
-                    <span style="font-size:11px;color:rgba(255,255,255,0.3);">${cronRelativeTime(c.lastRun)}</span>
-                </div>
-            `).join('');
-        }
-
-        function openCronPanel() {
-            document.getElementById('cron-overlay')?.remove();
+        function loadCronsTab() {
+            const container = document.getElementById('crons-container');
+            if (!container) return;
             const agentColors = typeof AGENT_COLORS !== 'undefined' ? AGENT_COLORS : {};
 
-            const html = `
-                <div class="cron-overlay" id="cron-overlay" onclick="if(event.target===this)closeCronPanel()">
-                    <div class="cron-panel-card" onclick="event.stopPropagation()">
-                        <div style="padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
-                            <div>
-                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-                                    <span style="font-size:18px;">🔄</span>
-                                    <h3 style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.95);">Cron Jobs</h3>
-                                </div>
-                                <p style="font-size:13px;color:rgba(255,255,255,0.4);margin:0;">Automated scheduled tasks</p>
-                            </div>
-                            <button class="task-detail-close" onclick="closeCronPanel()">✕</button>
+            const activeCount = CRON_JOBS.filter(c => c.status === 'active').length;
+            const pausedCount = CRON_JOBS.filter(c => c.status === 'paused').length;
+            const failedCount = CRON_JOBS.filter(c => c.status === 'failed').length;
+
+            const overviewBar = `
+                <div style="display:flex;gap:16px;margin-bottom:28px;" class="agent-card-stagger">
+                    <div class="glass-card" style="flex:1;padding:20px 24px;">
+                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Total Jobs</div>
+                        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.95);">${CRON_JOBS.length}</div>
+                    </div>
+                    <div class="glass-card" style="flex:1;padding:20px 24px;">
+                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Active</div>
+                        <div style="display:flex;align-items:baseline;gap:8px;">
+                            <span style="font-size:28px;font-weight:700;color:#10B981;">${activeCount}</span>
+                            <div style="width:8px;height:8px;border-radius:50%;background:#10B981;box-shadow:0 0 8px rgba(16,185,129,0.5);"></div>
                         </div>
-                        <div class="cron-panel-scroll">
-                            ${CRON_JOBS.map(c => {
-                                const ac = agentColors[c.agent] || '#9CA3AF';
-                                return `
-                                    <div class="cron-job-card" style="border-left:3px solid ${ac};">
-                                        <div style="display:flex;align-items:center;gap:8px;">
-                                            ${cronStatusDot(c.status)}
-                                            ${cronStatusLabel(c.status)}
-                                            <span style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.92);margin-left:4px;">${c.name}</span>
-                                        </div>
-                                        <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.5;">${c.description}</div>
-                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-top:4px;">
-                                            <div>
-                                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:3px;">Schedule</div>
-                                                <div style="font-size:12px;color:rgba(255,255,255,0.7);">${c.schedule}</div>
-                                            </div>
-                                            <div>
-                                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:3px;">Agent</div>
-                                                <div style="display:flex;align-items:center;gap:6px;">
-                                                    <div style="width:7px;height:7px;border-radius:50%;background:${ac};box-shadow:0 0 6px ${ac}55;"></div>
-                                                    <span style="font-size:12px;color:${ac};font-weight:600;">${c.agent}</span>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:3px;">Last Run</div>
-                                                <div style="display:flex;align-items:center;gap:6px;">
-                                                    <span style="font-size:12px;color:rgba(255,255,255,0.65);">${cronRelativeTime(c.lastRun)}</span>
-                                                    ${cronRunBadge(c.lastStatus)}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:3px;">Next Run</div>
-                                                <div style="font-size:12px;color:rgba(255,255,255,0.65);">${c.nextRun ? cronAbsoluteTime(c.nextRun) : 'Paused'}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
+                    </div>
+                    <div class="glass-card" style="flex:1;padding:20px 24px;">
+                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Paused</div>
+                        <div style="display:flex;align-items:baseline;gap:8px;">
+                            <span style="font-size:28px;font-weight:700;color:#F59E0B;">${pausedCount}</span>
+                            <div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;box-shadow:0 0 8px rgba(245,158,11,0.5);"></div>
+                        </div>
+                    </div>
+                    <div class="glass-card" style="flex:1;padding:20px 24px;">
+                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Failed</div>
+                        <div style="display:flex;align-items:baseline;gap:8px;">
+                            <span style="font-size:28px;font-weight:700;color:${failedCount > 0 ? '#EF4444' : 'rgba(255,255,255,0.3)'};">${failedCount}</span>
+                            ${failedCount > 0 ? '<div style="width:8px;height:8px;border-radius:50%;background:#EF4444;box-shadow:0 0 8px rgba(239,68,68,0.5);"></div>' : ''}
                         </div>
                     </div>
                 </div>
             `;
-            document.body.insertAdjacentHTML('beforeend', html);
-            requestAnimationFrame(() => {
-                document.getElementById('cron-overlay')?.classList.add('open');
-            });
-        }
 
-        function closeCronPanel() {
-            const overlay = document.getElementById('cron-overlay');
-            if (overlay) {
-                overlay.classList.remove('open');
-                setTimeout(() => overlay.remove(), 320);
-            }
-        }
+            const cards = CRON_JOBS.map((c, i) => {
+                const ac = agentColors[c.agent] || '#9CA3AF';
+                return `
+                    <div class="glass-card card-animate" style="padding:24px 28px;border-left:3px solid ${ac};animation-delay:${i * 80}ms;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                ${cronStatusDot(c.status)}
+                                ${cronStatusLabel(c.status)}
+                                <span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.92);margin-left:4px;">${c.name}</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div style="width:8px;height:8px;border-radius:50%;background:${ac};box-shadow:0 0 8px ${ac}55;"></div>
+                                <span style="font-size:13px;font-weight:600;color:${ac};">${c.agent}</span>
+                            </div>
+                        </div>
+                        <div style="font-size:14px;color:rgba(255,255,255,0.58);line-height:1.5;margin-bottom:16px;">${c.description}</div>
+                        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;">
+                            <div>
+                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Schedule</div>
+                                <div style="font-size:13px;color:rgba(255,255,255,0.75);">${c.schedule}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Last Run</div>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span style="font-size:13px;color:rgba(255,255,255,0.68);">${cronRelativeTime(c.lastRun)}</span>
+                                    ${cronRunBadge(c.lastStatus)}
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Next Run</div>
+                                <div style="font-size:13px;color:rgba(255,255,255,0.68);">${c.nextRun ? cronAbsoluteTime(c.nextRun) : '<span style="color:#F59E0B;">Paused</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Agent Role</div>
+                                <div style="font-size:13px;color:rgba(255,255,255,0.68);">${(typeof AGENT_ROLES !== 'undefined' && AGENT_ROLES[c.agent]) || 'Agent'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
-        // Esc to close cron panel
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.getElementById('cron-overlay')) {
-                closeCronPanel();
-            }
-        });
+            container.innerHTML = overviewBar + `
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                    ${cards}
+                </div>
+            `;
+        }
 
         // ── Mission Control — Jarvis System Status ──────
         (function initMissionControl() {
@@ -1717,8 +1625,7 @@
                 setInterval(updateActivityStatus, 15000);
             }, 2500);
 
-            // Populate cron preview in MC panel
-            renderMCCronPreview();
+            // Cron jobs moved to dedicated tab
         })();
 
         function showLogin() {
@@ -1779,13 +1686,14 @@
 
             const pageTitleEl = document.getElementById('pageTitle');
             const pageTitleIconEl = document.getElementById('pageTitleIcon');
-            const tabTitles = { dashboard: 'Dashboard', content: 'Content', tasks: 'Tasks', settings: 'Settings', agents: 'Agents' };
+            const tabTitles = { dashboard: 'Dashboard', content: 'Content', tasks: 'Tasks', settings: 'Settings', agents: 'Agents', crons: 'Cron Jobs' };
             const tabIcons = {
                 dashboard: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
                 content: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
                 tasks: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
                 settings: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-                agents: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+                agents: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+                crons: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
             };
 
             function switchTab(tabName) {
@@ -1813,6 +1721,9 @@
                 }
                 if (tabName === 'tasks') {
                     loadTasksTab();
+                }
+                if (tabName === 'crons') {
+                    loadCronsTab();
                 }
             }
 
