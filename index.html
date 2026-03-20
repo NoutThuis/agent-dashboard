@@ -1371,12 +1371,12 @@
 
         // ── Cron Jobs Data & Functions ──────────────────
         // TODO: Connect to real cron jobs table in Supabase
+        // Real Jarvis cron jobs — kept in sync manually for now
+        // TODO: fetch live from OpenClaw cron API when available
         const CRON_JOBS = [
-            { id: 'cron-1', name: 'Content Scan', description: 'Scans social media for trending topics in our niche.', schedule: 'Every 30 minutes', status: 'active', agent: 'Mira', lastRun: Date.now() - 12 * 60 * 1000, lastStatus: 'success', nextRun: Date.now() + 18 * 60 * 1000 },
-            { id: 'cron-2', name: 'Task Cleanup', description: 'Archives completed tasks older than 7 days.', schedule: 'Daily at 2:00 AM', status: 'active', agent: 'Noah', lastRun: Date.now() - 11 * 3600 * 1000, lastStatus: 'success', nextRun: new Date(new Date().setHours(26, 0, 0, 0)).getTime() },
-            { id: 'cron-3', name: 'Performance Report', description: 'Generates weekly agent performance summary.', schedule: 'Every Monday at 8:00 AM', status: 'active', agent: 'Lena', lastRun: Date.now() - 3 * 86400 * 1000, lastStatus: 'success', nextRun: Date.now() + 4 * 86400 * 1000 },
-            { id: 'cron-4', name: 'Dependency Check', description: 'Checks for outdated packages and security issues.', schedule: 'Daily at 6:00 AM', status: 'paused', agent: 'Ari', lastRun: Date.now() - 1 * 86400 * 1000, lastStatus: 'success', nextRun: null },
-            { id: 'cron-5', name: 'Database Backup', description: 'Creates a snapshot of all Supabase tables.', schedule: 'Every 6 hours', status: 'active', agent: 'Noah', lastRun: Date.now() - 2 * 3600 * 1000, lastStatus: 'success', nextRun: Date.now() + 4 * 3600 * 1000 },
+            { id: 'morning-news', name: 'Morning News Briefing', description: 'Daily AI & tech news roundup plus Gaanderen weather. Delivers 5-7 curated stories with context to the Discord general channel.', schedule: 'Daily at 8:00 AM', status: 'active', icon: '📰' },
+            { id: 'nightly-review', name: 'Nightly Memory Review', description: 'Reviews the day\'s conversations and updates the memory architecture — daily log, MEMORY.md, Obsidian vault, and bridge notes.', schedule: 'Daily at 11:55 PM', status: 'active', icon: '🧠' },
+            { id: 'daily-backup', name: 'Daily Backup', description: 'Auto-commits and pushes workspace and Obsidian vault changes to GitHub for off-machine backup.', schedule: 'Daily at 3:00 AM', status: 'active', icon: '💾' },
         ];
 
         function cronRelativeTime(ts) {
@@ -1414,85 +1414,37 @@
         function loadCronsTab() {
             const container = document.getElementById('crons-container');
             if (!container) return;
-            const agentColors = typeof AGENT_COLORS !== 'undefined' ? AGENT_COLORS : {};
 
-            const activeCount = CRON_JOBS.filter(c => c.status === 'active').length;
-            const pausedCount = CRON_JOBS.filter(c => c.status === 'paused').length;
-            const failedCount = CRON_JOBS.filter(c => c.status === 'failed').length;
+            const statusColors = { active: '#10B981', paused: '#F59E0B', failed: '#EF4444' };
 
-            const overviewBar = `
-                <div style="display:flex;gap:16px;margin-bottom:28px;" class="agent-card-stagger">
-                    <div class="glass-card" style="flex:1;padding:20px 24px;">
-                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Total Jobs</div>
-                        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.95);">${CRON_JOBS.length}</div>
-                    </div>
-                    <div class="glass-card" style="flex:1;padding:20px 24px;">
-                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Active</div>
-                        <div style="display:flex;align-items:baseline;gap:8px;">
-                            <span style="font-size:28px;font-weight:700;color:#10B981;">${activeCount}</span>
-                            <div style="width:8px;height:8px;border-radius:50%;background:#10B981;box-shadow:0 0 8px rgba(16,185,129,0.5);"></div>
-                        </div>
-                    </div>
-                    <div class="glass-card" style="flex:1;padding:20px 24px;">
-                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Paused</div>
-                        <div style="display:flex;align-items:baseline;gap:8px;">
-                            <span style="font-size:28px;font-weight:700;color:#F59E0B;">${pausedCount}</span>
-                            <div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;box-shadow:0 0 8px rgba(245,158,11,0.5);"></div>
-                        </div>
-                    </div>
-                    <div class="glass-card" style="flex:1;padding:20px 24px;">
-                        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Failed</div>
-                        <div style="display:flex;align-items:baseline;gap:8px;">
-                            <span style="font-size:28px;font-weight:700;color:${failedCount > 0 ? '#EF4444' : 'rgba(255,255,255,0.3)'};">${failedCount}</span>
-                            ${failedCount > 0 ? '<div style="width:8px;height:8px;border-radius:50%;background:#EF4444;box-shadow:0 0 8px rgba(239,68,68,0.5);"></div>' : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
+            const subtitle = `<p style="font-size:14px;color:rgba(255,255,255,0.4);margin-bottom:28px;">Automated scheduled tasks</p>`;
 
             const cards = CRON_JOBS.map((c, i) => {
-                const ac = agentColors[c.agent] || '#9CA3AF';
+                const sc = statusColors[c.status] || '#6B7280';
                 return `
-                    <div class="glass-card card-animate" style="padding:24px 28px;border-left:3px solid ${ac};animation-delay:${i * 80}ms;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                ${cronStatusDot(c.status)}
-                                ${cronStatusLabel(c.status)}
-                                <span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.92);margin-left:4px;">${c.name}</span>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <div style="width:8px;height:8px;border-radius:50%;background:${ac};box-shadow:0 0 8px ${ac}55;"></div>
-                                <span style="font-size:13px;font-weight:600;color:${ac};">${c.agent}</span>
-                            </div>
-                        </div>
-                        <div style="font-size:14px;color:rgba(255,255,255,0.58);line-height:1.5;margin-bottom:16px;">${c.description}</div>
-                        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;">
-                            <div>
-                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Schedule</div>
-                                <div style="font-size:13px;color:rgba(255,255,255,0.75);">${c.schedule}</div>
-                            </div>
-                            <div>
-                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Last Run</div>
-                                <div style="display:flex;align-items:center;gap:6px;">
-                                    <span style="font-size:13px;color:rgba(255,255,255,0.68);">${cronRelativeTime(c.lastRun)}</span>
-                                    ${cronRunBadge(c.lastStatus)}
+                    <div class="glass-card card-animate" style="padding:0;overflow:hidden;animation-delay:${i * 100}ms;">
+                        <div style="padding:20px 28px;background:${c.status === 'active' ? 'rgba(16,185,129,0.08)' : c.status === 'paused' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)'};border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:22px;">${c.icon}</span>
+                            <div style="flex:1;min-width:0;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="font-size:17px;font-weight:700;color:rgba(255,255,255,0.95);">${c.name}</span>
+                                    <div style="display:flex;align-items:center;gap:5px;">
+                                        <div style="width:7px;height:7px;border-radius:50%;background:${sc};box-shadow:0 0 8px ${sc}55;"></div>
+                                        <span style="font-size:11px;font-weight:600;color:${sc};">${c.status.charAt(0).toUpperCase() + c.status.slice(1)}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Next Run</div>
-                                <div style="font-size:13px;color:rgba(255,255,255,0.68);">${c.nextRun ? cronAbsoluteTime(c.nextRun) : '<span style="color:#F59E0B;">Paused</span>'}</div>
-                            </div>
-                            <div>
-                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Agent Role</div>
-                                <div style="font-size:13px;color:rgba(255,255,255,0.68);">${(typeof AGENT_ROLES !== 'undefined' && AGENT_ROLES[c.agent]) || 'Agent'}</div>
-                            </div>
+                            <span style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);">🕐 ${c.schedule}</span>
+                        </div>
+                        <div style="padding:20px 28px;">
+                            <div style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.65;">${c.description}</div>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            container.innerHTML = overviewBar + `
-                <div style="display:flex;flex-direction:column;gap:16px;">
+            container.innerHTML = subtitle + `
+                <div style="display:flex;flex-direction:column;gap:20px;">
                     ${cards}
                 </div>
             `;
