@@ -1769,7 +1769,7 @@
                     </div>
                     <div style="display:flex;justify-content:flex-end;gap:10px;">
                         <button class="task-detail-action-btn" onclick="closeIntelDeployModal()">Cancel</button>
-                        <button class="kanban-form-btn primary" style="padding:10px 18px;" onclick="confirmDeployUseCase()">Confirm Deploy</button>
+                        <button class="task-detail-action-btn" style="padding:10px 18px;background:rgba(255,255,255,0.10);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.9);" onclick="confirmDeployUseCase()">Confirm Deploy</button>
                     </div>
                 </div>
             `;
@@ -1918,7 +1918,7 @@
                         </div>
 
                         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                            <button class="kanban-form-btn primary" style="padding:12px 18px;box-shadow:0 0 24px rgba(124,58,237,0.2);" onclick="openIntelDeployModal()">Deploy to Tasks</button>
+                            <button class="task-detail-action-btn" style="padding:12px 18px;background:rgba(255,255,255,0.10);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.9);box-shadow:none;" onclick="openIntelDeployModal()">Deploy to Tasks</button>
                             <button class="task-detail-action-btn" onclick="toggleIntelBookmark()">${selected.bookmarked ? '★' : '☆'} Bookmark</button>
                             <button class="task-detail-action-btn" style="background:transparent;color:rgba(255,255,255,0.5);" onclick="dismissIntelItem()">Dismiss</button>
                         </div>
