@@ -978,64 +978,64 @@
         }
 
         .task-detail-overlay {
-            position: absolute;
+            position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             opacity: 0;
             pointer-events: none;
             transition: opacity 300ms ease;
-            border-radius: 28px;
-            z-index: 60;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .tasks-board-shell.detail-open .task-detail-overlay {
+        .task-detail-overlay.open {
             opacity: 1;
             pointer-events: auto;
         }
 
-        .task-detail-panel {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: min(480px, 100%);
-            height: 100%;
+        .task-detail-card {
+            width: min(560px, 92vw);
+            max-height: 85vh;
             display: flex;
             flex-direction: column;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(44px) saturate(1.8);
-            -webkit-backdrop-filter: blur(44px) saturate(1.8);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-right: none;
-            border-radius: 20px 0 0 20px;
-            box-shadow: -18px 0 48px rgba(0, 0, 0, 0.38), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+            background: #161B2E;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 24px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
             overflow: hidden;
-            transform: translateX(100%);
-            transition: transform 300ms ease;
-            z-index: 70;
+            transform: scale(0.95) translateY(12px);
+            opacity: 0;
+            transition: transform 300ms ease, opacity 300ms ease;
+            position: relative;
         }
 
-        .task-detail-panel::before {
+        .task-detail-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             height: 1px;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.28) 20%, rgba(255, 255, 255, 0.28) 80%, transparent 100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.18) 20%, rgba(255, 255, 255, 0.18) 80%, transparent 100%);
             pointer-events: none;
         }
 
-        .tasks-board-shell.detail-open .task-detail-panel {
-            transform: translateX(0);
+        .task-detail-overlay.open .task-detail-card {
+            transform: scale(1) translateY(0);
+            opacity: 1;
         }
 
         .task-detail-scroll {
             flex: 1;
             overflow-y: auto;
-            padding: 28px 28px 24px;
+            padding: 32px 32px 28px;
             display: flex;
             flex-direction: column;
-            gap: 22px;
+            gap: 24px;
         }
 
         .task-detail-section {
@@ -1044,24 +1044,31 @@
             gap: 12px;
         }
 
-        .task-detail-glass {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
+        .task-detail-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .task-detail-inner-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 14px;
             padding: 16px;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .task-detail-info-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
+            gap: 16px 24px;
         }
 
         .task-detail-info-item {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
             min-width: 0;
         }
 
@@ -1070,7 +1077,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            color: rgba(255, 255, 255, 0.38);
+            color: rgba(255, 255, 255, 0.35);
         }
 
         .task-detail-value {
@@ -1083,12 +1090,16 @@
         .task-detail-close {
             width: 34px;
             height: 34px;
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.72);
+            color: rgba(255, 255, 255, 0.6);
             cursor: pointer;
             transition: all 200ms ease;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .task-detail-close:hover {
@@ -1100,13 +1111,12 @@
             display: flex;
             gap: 10px;
             justify-content: flex-end;
-            padding: 20px 28px 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
+            padding: 18px 32px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
         }
 
         .task-detail-action-btn {
-            padding: 10px 16px;
+            padding: 10px 18px;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             background: rgba(255, 255, 255, 0.06);
@@ -2444,13 +2454,25 @@
 
         function openTaskDetail(taskId) {
             activeTaskDetailId = taskId;
-            renderTasksContent();
+            // Remove old overlay if any
+            document.getElementById('task-detail-overlay')?.remove();
+            const html = renderTaskDetailPanel();
+            if (!html) return;
+            document.body.insertAdjacentHTML('beforeend', html);
+            // Trigger open transition on next frame
+            requestAnimationFrame(() => {
+                document.getElementById('task-detail-overlay')?.classList.add('open');
+            });
         }
 
         function closeTaskDetail() {
             if (!activeTaskDetailId) return;
+            const overlay = document.getElementById('task-detail-overlay');
+            if (overlay) {
+                overlay.classList.remove('open');
+                setTimeout(() => overlay.remove(), 320);
+            }
             activeTaskDetailId = null;
-            renderTasksContent();
         }
 
         function renderMetadataContent(metadata) {
@@ -2510,60 +2532,73 @@
             ];
 
             return `
-                <div class="task-detail-overlay" onclick="closeTaskDetail()"></div>
-                <aside class="task-detail-panel" role="dialog" aria-modal="true" aria-label="Task detail panel">
-                    <div class="task-detail-scroll">
-                        <div class="task-detail-section">
-                            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
-                                <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
-                                    <h3 style="font-size:28px;line-height:1.2;font-weight:700;color:rgba(255,255,255,0.95);word-break:break-word;">${escapeHTML(task.title || 'Untitled task')}</h3>
-                                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                                        ${pillHTML(statusMeta.title, statusMeta.color)}
-                                        ${pillHTML(task.priority || 'N/A', priColor)}
-                                        ${pillHTML(task.track_status || 'N/A', trackColor)}
+                <div class="task-detail-overlay" id="task-detail-overlay" onclick="if(event.target===this)closeTaskDetail()">
+                    <div class="task-detail-card" onclick="event.stopPropagation()">
+                        <div class="task-detail-scroll">
+                            <!-- Header -->
+                            <div class="task-detail-section">
+                                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+                                    <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                                        <div style="width:42px;height:42px;border-radius:14px;background:${hexToRgba(agentColor, 0.15)};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                            <div style="width:12px;height:12px;border-radius:50%;background:${agentColor};box-shadow:0 0 10px ${hexToRgba(agentColor, 0.5)};"></div>
+                                        </div>
+                                        <div style="min-width:0;">
+                                            <h3 style="font-size:20px;line-height:1.3;font-weight:700;color:rgba(255,255,255,0.95);word-break:break-word;margin-bottom:4px;">${escapeHTML(task.title || 'Untitled task')}</h3>
+                                            <span style="font-size:13px;color:rgba(255,255,255,0.5);">${escapeHTML(task.agent_name || 'Unknown')}</span>
+                                        </div>
                                     </div>
+                                    <button class="task-detail-close" onclick="closeTaskDetail()">✕</button>
                                 </div>
-                                <button class="task-detail-close" onclick="closeTaskDetail()">✕</button>
                             </div>
-                        </div>
 
-                        <div class="task-detail-section">
-                            <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.84);">Task Info</div>
-                            <div class="task-detail-glass task-detail-info-grid">
-                                ${infoItems.map(item => `
-                                    <div class="task-detail-info-item">
-                                        <div class="task-detail-label">${item.label}</div>
-                                        <div class="task-detail-value">${item.value}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-
-                        <div class="task-detail-section">
-                            <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.84);"><span>📄</span><span>Output</span></div>
-                            <div class="task-detail-glass" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.7;color:${output ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.42)'};white-space:pre-wrap;">${output ? escapeHTML(output) : 'No output recorded'}</div>
-                        </div>
-
-                        ${errorMessage ? `
+                            <!-- Description placeholder -->
                             <div class="task-detail-section">
-                                <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#FCA5A5;"><span>⚠️</span><span>Error</span></div>
-                                <div class="task-detail-glass" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.16);color:rgba(254,202,202,0.92);font-size:13px;line-height:1.7;white-space:pre-wrap;">${escapeHTML(errorMessage)}</div>
+                                <div class="task-detail-section-title">Description</div>
+                                <div style="font-size:14px;line-height:1.7;color:rgba(255,255,255,0.65);">${output ? escapeHTML(output) : '<span style="color:rgba(255,255,255,0.3);">No description or output recorded.</span>'}</div>
                             </div>
-                        ` : ''}
 
-                        ${hasMetadata ? `
+                            <!-- Status pills row -->
+                            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                                ${pillHTML(statusMeta.title, statusMeta.color)}
+                                ${pillHTML(task.priority || 'N/A', priColor)}
+                                ${pillHTML(task.track_status || 'N/A', trackColor)}
+                                ${pillHTML(task.category || 'N/A', catColor)}
+                            </div>
+
+                            <!-- Tags / Info grid -->
                             <div class="task-detail-section">
-                                <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.84);"><span>🔧</span><span>Metadata</span></div>
-                                <div class="task-detail-glass">${renderMetadataContent(task.metadata)}</div>
+                                <div class="task-detail-section-title">Details</div>
+                                <div class="task-detail-inner-box task-detail-info-grid">
+                                    ${infoItems.map(item => `
+                                        <div class="task-detail-info-item">
+                                            <div class="task-detail-label">${item.label}</div>
+                                            <div class="task-detail-value">${item.value}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </div>
-                        ` : ''}
-                    </div>
 
-                    <div class="task-detail-action-row">
-                        <button class="task-detail-action-btn" onclick="openEditModal('${task.id}')">Edit</button>
-                        <button class="task-detail-action-btn danger" onclick="deleteTask('${task.id}')">Delete</button>
+                            ${errorMessage ? `
+                                <div class="task-detail-section">
+                                    <div style="display:flex;align-items:center;gap:8px;"><span>⚠️</span><span class="task-detail-section-title" style="color:#FCA5A5;">Error</span></div>
+                                    <div class="task-detail-inner-box" style="background:rgba(239,68,68,0.06);border-color:rgba(239,68,68,0.14);color:rgba(254,202,202,0.9);font-size:13px;line-height:1.7;white-space:pre-wrap;">${escapeHTML(errorMessage)}</div>
+                                </div>
+                            ` : ''}
+
+                            ${hasMetadata ? `
+                                <div class="task-detail-section">
+                                    <div style="display:flex;align-items:center;gap:8px;"><span>🔧</span><span class="task-detail-section-title">Metadata</span></div>
+                                    <div class="task-detail-inner-box">${renderMetadataContent(task.metadata)}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="task-detail-action-row">
+                            <button class="task-detail-action-btn" onclick="closeTaskDetail();openEditModal('${task.id}')">Edit</button>
+                            <button class="task-detail-action-btn danger" onclick="closeTaskDetail();deleteTask('${task.id}')">Delete</button>
+                        </div>
                     </div>
-                </aside>
+                </div>
             `;
         }
 
@@ -2660,24 +2695,21 @@
             }));
 
             return `
-                <div class="tasks-board-shell ${activeTaskDetailId ? 'detail-open' : ''}">
-                    <div class="kanban-board">
-                        ${columns.map(col => `
-                            <div class="kanban-column" data-status="${col.status}"
-                                 ondragover="onTaskDragOver(event)" ondragleave="onTaskDragLeave(event)" ondrop="onTaskDrop(event, '${col.status}')">
-                                <div class="kanban-col-header">
-                                    <span class="kanban-col-title">${col.title}</span>
-                                    <span class="kanban-col-count">${col.tasks.length}</span>
-                                </div>
-                                <div id="kanban-cards-${col.status}">
-                                    ${col.tasks.map(t => renderTaskCard(t)).join('')}
-                                </div>
-                                <div id="add-task-area-${col.status}"></div>
-                                <button class="kanban-add-btn" onclick="showAddTaskForm('${col.status}')">+ Add Task</button>
+                <div class="kanban-board">
+                    ${columns.map(col => `
+                        <div class="kanban-column" data-status="${col.status}"
+                             ondragover="onTaskDragOver(event)" ondragleave="onTaskDragLeave(event)" ondrop="onTaskDrop(event, '${col.status}')">
+                            <div class="kanban-col-header">
+                                <span class="kanban-col-title">${col.title}</span>
+                                <span class="kanban-col-count">${col.tasks.length}</span>
                             </div>
-                        `).join('')}
-                    </div>
-                    ${renderTaskDetailPanel()}
+                            <div id="kanban-cards-${col.status}">
+                                ${col.tasks.map(t => renderTaskCard(t)).join('')}
+                            </div>
+                            <div id="add-task-area-${col.status}"></div>
+                            <button class="kanban-add-btn" onclick="showAddTaskForm('${col.status}')">+ Add Task</button>
+                        </div>
+                    `).join('')}
                 </div>
             `;
         }
@@ -2931,6 +2963,13 @@
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.kanban-menu-btn')) {
                 closeTaskMenus();
+            }
+        });
+
+        // Esc to close detail modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && activeTaskDetailId) {
+                closeTaskDetail();
             }
         });
 
