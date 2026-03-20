@@ -1556,7 +1556,7 @@
 
         // ── Intelligence Tab ───────────────────────────
         // TODO: Connect to AI scanning pipeline
-        const INTELLIGENCE_USE_CASES = [
+        const SEED_INTELLIGENCE_USE_CASES = [
             {
                 id: 'ui-library-generator',
                 title: 'Automated UI Component Library Generator',
@@ -1685,7 +1685,8 @@
             }
         ];
 
-        let intelligenceSelectedId = INTELLIGENCE_USE_CASES[0].id;
+        let intelligenceData = [...SEED_INTELLIGENCE_USE_CASES];
+        let intelligenceSelectedId = intelligenceData[0].id;
         let intelligenceFilter = 'All';
         let intelligenceSort = 'Momentum Score';
         let intelligenceLoading = false;
@@ -1698,8 +1699,34 @@
             return `${Math.floor(diff / 86400)}d ago`;
         }
 
+        function normalizeIntelligenceRow(row) {
+            const meta = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+            return {
+                id: row.id,
+                title: row.title,
+                sourceType: row.source_type || meta.sourceType || 'twitter',
+                sourceLabel: row.source_label || meta.sourceLabel || 'Unknown source',
+                sourceBadge: row.source_badge || meta.sourceBadge || `Found via ${row.source_label || 'source'}`,
+                momentum: row.momentum_score ?? 0,
+                skillMatch: row.skill_match_score ?? 0,
+                skillNote: row.skill_match_note || '',
+                trend: row.trend_score ?? 0,
+                trendNote: row.trend_note || '',
+                complexity: row.complexity_score ?? 0,
+                complexityLabel: row.complexity_label || 'Unknown complexity',
+                description: row.description || '',
+                preview: row.preview_kind || 'component-grid',
+                discoveredAt: row.discovered_at ? new Date(row.discovered_at).getTime() : Date.now(),
+                unread: row.unread ?? true,
+                bookmarked: row.bookmarked ?? false,
+                dismissed: row.dismissed ?? false,
+                deployAgents: Array.isArray(meta.deployAgents) ? meta.deployAgents : [],
+                deployTasks: meta.deployTasks || 0,
+            };
+        }
+
         function getIntelligenceItems() {
-            let items = [...INTELLIGENCE_USE_CASES];
+            let items = intelligenceData.filter(i => !i.dismissed);
             if (intelligenceFilter === 'High Momentum') items = items.filter(i => i.momentum >= 85);
             if (intelligenceFilter === 'New') items = items.filter(i => Date.now() - i.discoveredAt < 12 * 60 * 60 * 1000);
             if (intelligenceFilter === 'Bookmarked') items = items.filter(i => i.bookmarked);
@@ -1803,7 +1830,7 @@
         }
 
         async function confirmDeployUseCase() {
-            const item = INTELLIGENCE_USE_CASES.find(i => i.id === intelligenceSelectedId);
+            const item = intelligenceData.find(i => i.id === intelligenceSelectedId);
             if (!item) return;
 
             const deployTasks = buildUseCaseTasks(item);
@@ -1832,7 +1859,7 @@
         }
 
         function openIntelDeployModal() {
-            const item = INTELLIGENCE_USE_CASES.find(i => i.id === intelligenceSelectedId);
+            const item = intelligenceData.find(i => i.id === intelligenceSelectedId);
             if (!item) return;
             const deployTasks = buildUseCaseTasks(item);
             closeIntelDeployModal();
@@ -1857,26 +1884,43 @@
             document.body.appendChild(overlay);
         }
 
+        async function persistIntelligenceState(itemId, patch) {
+            try {
+                const sb = getSupabase();
+                if (!sb) return;
+                const { error } = await sb.from('agent_intelligence_items').update(patch).eq('id', itemId);
+                if (error) throw error;
+            } catch (err) {
+                console.warn('Could not persist intelligence state:', err);
+            }
+        }
+
         function toggleIntelBookmark() {
-            const item = INTELLIGENCE_USE_CASES.find(i => i.id === intelligenceSelectedId);
+            const item = intelligenceData.find(i => i.id === intelligenceSelectedId);
             if (!item) return;
             item.bookmarked = !item.bookmarked;
             renderIntelligenceTab();
+            persistIntelligenceState(item.id, { bookmarked: item.bookmarked });
         }
 
         function dismissIntelItem() {
-            const idx = INTELLIGENCE_USE_CASES.findIndex(i => i.id === intelligenceSelectedId);
+            const idx = intelligenceData.findIndex(i => i.id === intelligenceSelectedId);
             if (idx === -1) return;
-            INTELLIGENCE_USE_CASES.splice(idx, 1);
+            const dismissedId = intelligenceData[idx].id;
+            intelligenceData[idx].dismissed = true;
             const remaining = getIntelligenceItems();
             intelligenceSelectedId = remaining[0]?.id || null;
             renderIntelligenceTab();
+            persistIntelligenceState(dismissedId, { dismissed: true });
         }
 
         function selectIntelligenceItem(id) {
             intelligenceSelectedId = id;
-            const item = INTELLIGENCE_USE_CASES.find(i => i.id === id);
-            if (item) item.unread = false;
+            const item = intelligenceData.find(i => i.id === id);
+            if (item) {
+                item.unread = false;
+                persistIntelligenceState(item.id, { unread: false });
+            }
             renderIntelligenceTab();
         }
 
@@ -2009,8 +2053,33 @@
             if (!container) return;
             intelligenceLoading = true;
             container.innerHTML = renderIntelligenceSkeleton();
-            await new Promise(resolve => setTimeout(resolve, 500));
+
+            try {
+                const sb = getSupabase();
+                if (!sb) throw new Error('Supabase SDK not loaded');
+
+                const { data, error } = await sb
+                    .from('agent_intelligence_items')
+                    .select('*')
+                    .order('momentum_score', { ascending: false })
+                    .order('discovered_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    intelligenceData = data.map(normalizeIntelligenceRow);
+                } else {
+                    intelligenceData = [...SEED_INTELLIGENCE_USE_CASES];
+                }
+            } catch (err) {
+                console.warn('Intelligence tab falling back to seed data:', err);
+                intelligenceData = [...SEED_INTELLIGENCE_USE_CASES];
+            }
+
             intelligenceLoading = false;
+            if (!intelligenceData.some(i => i.id === intelligenceSelectedId) && intelligenceData[0]) {
+                intelligenceSelectedId = intelligenceData[0].id;
+            }
             renderIntelligenceTab();
         }
 
