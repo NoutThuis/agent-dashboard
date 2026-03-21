@@ -1412,6 +1412,21 @@
 
         .dd-lib-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
         .dd-lib-title { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.9); }
+        .dd-sync-pill {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.58);
+            white-space: nowrap;
+        }
+        .dd-sync-synced { color: rgba(110,231,183,0.95); border-color: rgba(16,185,129,0.24); background: rgba(16,185,129,0.10); }
+        .dd-sync-cached { color: rgba(252,211,77,0.95); border-color: rgba(245,158,11,0.24); background: rgba(245,158,11,0.10); }
+        .dd-sync-syncing { color: rgba(125,211,252,0.95); border-color: rgba(6,182,212,0.24); background: rgba(6,182,212,0.10); }
+        .dd-sync-error { color: rgba(251,146,60,0.95); border-color: rgba(249,115,22,0.24); background: rgba(249,115,22,0.10); }
         .dd-lib-count {
             font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
             background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(6,182,212,0.3));
@@ -1819,6 +1834,7 @@
                                 <div class="dd-lib-header">
                                     <span class="dd-lib-title">Document Library</span>
                                     <span class="dd-lib-count" id="ddDocCount">0</span>
+                                    <span class="dd-sync-pill dd-sync-syncing" id="ddSyncPill">Syncing…</span>
                                     <input type="text" class="dd-search" id="ddSearch" placeholder="Search documents..." oninput="ddRenderLibrary()">
                                 </div>
                                 <div class="dd-filters" id="ddFilters">
@@ -4568,6 +4584,7 @@
         let ddCompareSelected = new Set();
         let ddSelectedModel = localStorage.getItem('dd_analysis_model') || 'anthropic/claude-opus-4-6';
         let ddLastLoadError = '';
+        let ddSyncState = 'syncing';
         const DD_CACHE_KEY = 'docudigest_documents_cache_v1';
 
         // ── Upload Zone events ──
@@ -4623,6 +4640,19 @@
             toast.textContent = msg;
             toast.classList.add('visible');
             setTimeout(() => toast.classList.remove('visible'), 3000);
+        }
+
+        function ddRenderSyncPill() {
+            const pill = document.getElementById('ddSyncPill');
+            if (!pill) return;
+            pill.className = `dd-sync-pill dd-sync-${ddSyncState}`;
+            pill.textContent = ddSyncState === 'synced'
+                ? 'Synced'
+                : ddSyncState === 'cached'
+                    ? 'Cached'
+                    : ddSyncState === 'error'
+                        ? 'Sync issue'
+                        : 'Syncing…';
         }
 
         function ddNormalizeDoc(doc) {
@@ -4879,10 +4909,17 @@
                 });
                 if (error) {
                     console.warn('Failed to save doc to Supabase:', error.message);
+                    ddSyncState = 'cached';
+                    ddRenderSyncPill();
                     ddShowToast('Saved locally. Supabase sync failed.');
+                } else {
+                    ddSyncState = 'synced';
+                    ddRenderSyncPill();
                 }
             } catch (err) {
                 console.warn('Supabase save error:', err.message);
+                ddSyncState = 'cached';
+                ddRenderSyncPill();
                 ddShowToast('Saved locally. Supabase sync failed.');
             }
         }
@@ -4951,6 +4988,8 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
         async function ddLoadDocuments() {
             const cachedDocs = ddLoadCache();
             ddLastLoadError = '';
+            ddSyncState = 'syncing';
+            ddRenderSyncPill();
             try {
                 const { data, error } = await supabase
                     .from('documents')
@@ -4965,15 +5004,18 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
                     merged.set(doc.id, ddNormalizeDoc({ ...doc, analysis_model: cached.analysis_model || doc.analysis_model || 'unknown', analysis_error: cached.analysis_error || '' }));
                 });
                 ddDocuments = Array.from(merged.values());
+                ddSyncState = 'synced';
                 ddSaveCache();
             } catch (err) {
                 console.warn('Failed to load documents:', err.message);
                 ddLastLoadError = err.message || 'Unknown load error';
                 ddDocuments = cachedDocs;
+                ddSyncState = cachedDocs.length ? 'cached' : 'error';
                 if (cachedDocs.length) {
                     ddShowToast('Loaded cached documents. Supabase fetch failed.');
                 }
             }
+            ddRenderSyncPill();
             ddRenderLibrary();
             ddRenderDetail();
         }
@@ -5012,14 +5054,8 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
 
             countEl.textContent = ddDocuments.length;
 
-            const loadErrorHtml = ddLastLoadError ? `
-                <div class="glass-card" style="margin-bottom:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.035);">
-                    <span style="font-size:12px;color:rgba(255,255,255,0.62);">Showing cached documents. Cloud sync read is unavailable right now.</span>
-                    <button class="dd-btn" onclick="ddLoadDocuments()">Retry</button>
-                </div>` : '';
-
             if (docs.length === 0) {
-                listEl.innerHTML = `${loadErrorHtml}
+                listEl.innerHTML = `
                     <div class="dd-empty-state">
                         <div class="dd-empty-icon">📑</div>
                         <div class="dd-empty-text">No documents yet — drop a PDF above to get started</div>
@@ -5033,7 +5069,7 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
                 Marketing: 'rgba(236,72,153,0.15)', Other: 'rgba(148,163,184,0.15)'
             };
 
-            listEl.innerHTML = `${loadErrorHtml}` + docs.map(d => `
+            listEl.innerHTML = docs.map(d => `
                 <div class="dd-doc-item ${d.id === ddSelectedId ? 'selected' : ''}" onclick="ddSelectDoc('${d.id}')" data-id="${d.id}">
                     ${ddCompareMode ? `<input type="checkbox" class="dd-checkbox" ${ddCompareSelected.has(d.id) ? 'checked' : ''} onclick="event.stopPropagation(); ddToggleCompareDoc('${d.id}', this)" style="position:absolute;top:14px;left:16px;">` : ''}
                     <button class="dd-doc-menu-btn" onclick="event.stopPropagation(); ddToggleMenu('${d.id}')">⋯</button>
