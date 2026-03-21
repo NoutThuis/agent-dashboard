@@ -1799,7 +1799,83 @@
                 </div>
 
                 <div id="panel-settings" class="tab-panel">
-                    <!-- Settings tab will go here -->
+                    <div id="settings-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+                            <!-- Session & Auth -->
+                            <div class="glass-card" style="padding:24px;border-radius:20px;">
+                                <h3 style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:16px;display:flex;align-items:center;gap:8px;">🔐 Session & Auth</h3>
+                                <div style="display:flex;flex-direction:column;gap:12px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:13px;color:rgba(255,255,255,0.6);">Session type</span>
+                                        <span id="settingsSessionType" style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);">—</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:13px;color:rgba(255,255,255,0.6);">User email</span>
+                                        <span id="settingsUserEmail" style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);">—</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:13px;color:rgba(255,255,255,0.6);">Supabase connection</span>
+                                        <span id="settingsSupabaseStatus" style="font-size:13px;font-weight:600;">
+                                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24;margin-right:6px;vertical-align:middle;"></span>Checking…
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gateway Status -->
+                            <div class="glass-card" style="padding:24px;border-radius:20px;">
+                                <h3 style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:16px;display:flex;align-items:center;gap:8px;">🌐 Gateway (Tailscale)</h3>
+                                <div style="display:flex;flex-direction:column;gap:12px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:13px;color:rgba(255,255,255,0.6);">Endpoint</span>
+                                        <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);font-family:monospace;">nouts-mac-mini.taild6c2b0.ts.net</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:13px;color:rgba(255,255,255,0.6);">Status</span>
+                                        <span id="settingsGatewayStatus" style="font-size:13px;font-weight:600;">
+                                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24;margin-right:6px;vertical-align:middle;"></span>Checking…
+                                        </span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:13px;color:rgba(255,255,255,0.6);">Token</span>
+                                        <span id="settingsGatewayTokenStatus" style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);">—</span>
+                                    </div>
+                                    <div style="display:flex;gap:8px;margin-top:4px;">
+                                        <button class="kanban-form-btn primary" style="flex:1;padding:8px 12px;font-size:12px;border-radius:10px;" onclick="settingsSetGatewayToken()">Set Token</button>
+                                        <button class="kanban-form-btn secondary" style="flex:1;padding:8px 12px;font-size:12px;border-radius:10px;" onclick="settingsTestGateway()">Test</button>
+                                        <button class="kanban-form-btn secondary" style="padding:8px 12px;font-size:12px;border-radius:10px;" onclick="settingsClearGatewayToken()">Clear</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Default AI Model -->
+                            <div class="glass-card" style="padding:24px;border-radius:20px;">
+                                <h3 style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:16px;display:flex;align-items:center;gap:8px;">🤖 Default DocuDigest Model</h3>
+                                <p style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:12px;">This model is used for new document analysis. You can still override per-upload.</p>
+                                <div style="display:flex;gap:8px;">
+                                    <button class="kanban-form-btn" id="settingsModelClaude" style="flex:1;padding:10px 12px;font-size:12px;border-radius:10px;" onclick="settingsSetModel('anthropic/claude-opus-4-6')">Claude Opus 4.6</button>
+                                    <button class="kanban-form-btn" id="settingsModelGPT" style="flex:1;padding:10px 12px;font-size:12px;border-radius:10px;" onclick="settingsSetModel('openai-codex/gpt-5.4')">GPT 5.4</button>
+                                </div>
+                                <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.4);">Currently: <span id="settingsCurrentModel">—</span></div>
+                            </div>
+
+                            <!-- Data Management -->
+                            <div class="glass-card" style="padding:24px;border-radius:20px;">
+                                <h3 style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:16px;display:flex;align-items:center;gap:8px;">🗂️ Data Management</h3>
+                                <div style="display:flex;flex-direction:column;gap:10px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <div>
+                                            <div style="font-size:13px;color:rgba(255,255,255,0.7);">DocuDigest local cache</div>
+                                            <div style="font-size:11px;color:rgba(255,255,255,0.35);" id="settingsCacheInfo">—</div>
+                                        </div>
+                                        <button class="kanban-form-btn secondary" style="padding:8px 14px;font-size:12px;border-radius:10px;" onclick="settingsClearCache()">Clear Cache</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
 
                 <div id="panel-intelligence" class="tab-panel">
@@ -3005,6 +3081,9 @@
                 }
                 if (tabName === 'crons') {
                     loadCronsTab();
+                }
+                if (tabName === 'settings') {
+                    settingsInit();
                 }
                 if (tabName === 'docudigest') {
                     ddLoadDocuments();
@@ -5313,6 +5392,164 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
         }
 
         // DocuDigest auto-loads via switchTab hook in the main IIFE
+
+        // ── Settings Tab ────────────────────────────────
+        function settingsInit() {
+            // Session type
+            const sb = getSupabase();
+            const sessionEl = document.getElementById('settingsSessionType');
+            const emailEl = document.getElementById('settingsUserEmail');
+            const supaEl = document.getElementById('settingsSupabaseStatus');
+
+            if (sb) {
+                sb.auth.getSession().then(({ data }) => {
+                    if (data?.session?.user) {
+                        sessionEl.textContent = 'Authenticated';
+                        emailEl.textContent = data.session.user.email || '—';
+                    } else {
+                        sessionEl.textContent = 'Anonymous (anon key)';
+                        emailEl.textContent = 'N/A';
+                    }
+                }).catch(() => {
+                    sessionEl.textContent = 'Anonymous (anon key)';
+                    emailEl.textContent = 'N/A';
+                });
+
+                // Supabase health check
+                sb.from('documents').select('id', { count: 'exact', head: true }).then(({ error }) => {
+                    if (error) {
+                        supaEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(239,68,68,0.9);">Error</span>';
+                    } else {
+                        supaEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(52,211,153,0.9);">Connected</span>';
+                    }
+                });
+            } else {
+                sessionEl.textContent = 'No client';
+                supaEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(239,68,68,0.9);">Not initialized</span>';
+            }
+
+            // Gateway status
+            settingsCheckGateway();
+
+            // Gateway token status
+            settingsUpdateTokenStatus();
+
+            // Model selector
+            settingsUpdateModelButtons();
+
+            // Cache info
+            settingsUpdateCacheInfo();
+        }
+
+        function settingsCheckGateway() {
+            const el = document.getElementById('settingsGatewayStatus');
+            const token = localStorage.getItem('dd_gateway_token') || '';
+            if (!token) {
+                el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(251,191,36,0.9);">No token set</span>';
+                return;
+            }
+            el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24;margin-right:6px;vertical-align:middle;"></span>Testing…';
+            fetch('https://nouts-mac-mini.taild6c2b0.ts.net/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'openclaw:main', messages: [{ role: 'user', content: 'respond with just: ok' }], max_tokens: 5 })
+            }).then(r => {
+                if (r.ok) {
+                    el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(52,211,153,0.9);">Reachable</span>';
+                } else {
+                    el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(239,68,68,0.9);">Error ' + r.status + '</span>';
+                }
+            }).catch(() => {
+                el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(239,68,68,0.9);">Unreachable</span>';
+            });
+        }
+
+        function settingsTestGateway() {
+            settingsCheckGateway();
+            ddShowToast('Testing gateway connection…');
+        }
+
+        function settingsUpdateTokenStatus() {
+            const el = document.getElementById('settingsGatewayTokenStatus');
+            const token = localStorage.getItem('dd_gateway_token') || '';
+            if (token) {
+                el.innerHTML = '<span style="color:rgba(52,211,153,0.9);">Set</span> <span style="color:rgba(255,255,255,0.3);font-size:11px;">(' + token.slice(0, 6) + '…)</span>';
+            } else {
+                el.innerHTML = '<span style="color:rgba(251,191,36,0.9);">Not set</span>';
+            }
+        }
+
+        function settingsSetGatewayToken() {
+            const current = localStorage.getItem('dd_gateway_token') || '';
+            const input = prompt('Enter your OpenClaw Gateway token:', current);
+            if (input !== null) {
+                if (input.trim()) {
+                    localStorage.setItem('dd_gateway_token', input.trim());
+                    ddShowToast('Gateway token saved.');
+                } else {
+                    localStorage.removeItem('dd_gateway_token');
+                    ddShowToast('Gateway token cleared.');
+                }
+                settingsUpdateTokenStatus();
+                settingsCheckGateway();
+            }
+        }
+
+        function settingsClearGatewayToken() {
+            if (confirm('Clear the stored gateway token?')) {
+                localStorage.removeItem('dd_gateway_token');
+                settingsUpdateTokenStatus();
+                settingsCheckGateway();
+                ddShowToast('Gateway token cleared.');
+            }
+        }
+
+        function settingsSetModel(model) {
+            localStorage.setItem('dd_analysis_model', model);
+            ddSelectedModel = model;
+            ddSetModel(model);
+            settingsUpdateModelButtons();
+            ddShowToast('Default model set to ' + (model.includes('opus') ? 'Claude Opus 4.6' : 'GPT 5.4'));
+        }
+
+        function settingsUpdateModelButtons() {
+            const model = localStorage.getItem('dd_analysis_model') || 'anthropic/claude-opus-4-6';
+            const claude = document.getElementById('settingsModelClaude');
+            const gpt = document.getElementById('settingsModelGPT');
+            if (claude) {
+                claude.className = model === 'anthropic/claude-opus-4-6' ? 'kanban-form-btn primary' : 'kanban-form-btn secondary';
+            }
+            if (gpt) {
+                gpt.className = model === 'openai-codex/gpt-5.4' ? 'kanban-form-btn primary' : 'kanban-form-btn secondary';
+            }
+            const cur = document.getElementById('settingsCurrentModel');
+            if (cur) cur.textContent = model.includes('opus') ? 'Claude Opus 4.6' : 'GPT 5.4';
+        }
+
+        function settingsUpdateCacheInfo() {
+            const el = document.getElementById('settingsCacheInfo');
+            const raw = localStorage.getItem('docudigest_documents_cache_v1');
+            if (!raw) {
+                el.textContent = 'Empty — no cached documents';
+                return;
+            }
+            try {
+                const docs = JSON.parse(raw);
+                const bytes = new Blob([raw]).size;
+                const kb = (bytes / 1024).toFixed(1);
+                el.textContent = `${docs.length} document${docs.length !== 1 ? 's' : ''} · ${kb} KB`;
+            } catch {
+                el.textContent = 'Invalid cache data';
+            }
+        }
+
+        function settingsClearCache() {
+            if (confirm('Clear the DocuDigest local cache? Documents stored in Supabase will still be available.')) {
+                localStorage.removeItem('docudigest_documents_cache_v1');
+                settingsUpdateCacheInfo();
+                ddShowToast('Local cache cleared.');
+            }
+        }
     </script>
 </body>
 </html>
