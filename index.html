@@ -4680,6 +4680,37 @@
             }
         }
 
+        const ddProgressAnimators = new Map();
+
+        function ddSetProgress(id, pct) {
+            const bar = document.getElementById('dd-bar-' + id);
+            if (bar) bar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+        }
+
+        function ddStopProgressAnimation(id) {
+            const existing = ddProgressAnimators.get(id);
+            if (existing) {
+                clearInterval(existing.interval);
+                ddProgressAnimators.delete(id);
+            }
+        }
+
+        function ddStartProgressAnimation(id, fromPct, toPct, durationMs = 12000) {
+            ddStopProgressAnimation(id);
+            let current = fromPct;
+            ddSetProgress(id, current);
+            const start = Date.now();
+            const interval = setInterval(() => {
+                const elapsed = Date.now() - start;
+                const t = Math.min(elapsed / durationMs, 1);
+                const eased = 1 - Math.pow(1 - t, 2.2);
+                current = fromPct + (toPct - fromPct) * eased;
+                ddSetProgress(id, current);
+                if (t >= 1) ddStopProgressAnimation(id);
+            }, 180);
+            ddProgressAnimators.set(id, { interval });
+        }
+
         function ddUpdateStage(id, stageNum, status) {
             for (let i = 1; i <= 4; i++) {
                 const el = document.getElementById(`dd-s${i}-${id}`);
@@ -4696,9 +4727,19 @@
                     el.innerHTML = '○ ' + el.textContent.replace(/^[⏳○✓✗]\s*/, '');
                 }
             }
-            const pcts = { 1: '10%', 2: '40%', 3: '75%', 4: '100%' };
-            const bar = document.getElementById('dd-bar-' + id);
-            if (bar) bar.style.width = pcts[stageNum] || '0%';
+            if (stageNum === 1) {
+                ddStopProgressAnimation(id);
+                ddStartProgressAnimation(id, 2, 18, 1200);
+            } else if (stageNum === 2) {
+                ddStopProgressAnimation(id);
+                ddStartProgressAnimation(id, 18, 52, 1800);
+            } else if (stageNum === 3 && status !== 'failed') {
+                ddStopProgressAnimation(id);
+                ddStartProgressAnimation(id, 52, 92, 15000);
+            } else if (stageNum === 4) {
+                ddStopProgressAnimation(id);
+                ddSetProgress(id, status === 'failed' ? 100 : 100);
+            }
         }
 
         async function ddPipelineProcess(file, id) {
@@ -4748,6 +4789,8 @@
                     const speed = (p / elapsed).toFixed(1);
                     const speedEl = document.getElementById('dd-speed-' + id);
                     if (speedEl) speedEl.textContent = `${p}/${pdf.numPages} pages · ${speed} pages/sec`;
+                    const extractPct = 18 + (p / pdf.numPages) * 34;
+                    ddSetProgress(id, extractPct);
                 }
                 doc.extracted_text = fullText.trim();
             } catch (err) {
@@ -4782,8 +4825,9 @@
             if (doc.status === 'ready') {
                 const s4 = document.getElementById('dd-s4-' + id);
                 if (s4) { s4.className = 'dd-stage done'; s4.innerHTML = '✓ Complete'; }
-                const bar = document.getElementById('dd-bar-' + id);
-                if (bar) bar.style.width = '100%';
+                setTimeout(() => ddSetProgress(id, 100), 120);
+            } else {
+                setTimeout(() => ddSetProgress(id, 100), 120);
             }
 
             ddDocuments.push(doc);
