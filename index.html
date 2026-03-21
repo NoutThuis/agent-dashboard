@@ -1840,15 +1840,132 @@
 
         function renderIntelSnapshot(kind) {
             const line = (w, o = 0.5) => `<div style="height:8px;width:${w};border-radius:999px;background:rgba(255,255,255,${o * 0.12 + 0.06});"></div>`;
+            const label = (text) => `<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.28);margin-bottom:2px;">${text}</div>`;
+            const box = (h, bg = 'rgba(255,255,255,0.06)') => `<div style="height:${h}px;border-radius:12px;background:${bg};"></div>`;
+            const card = (content) => `<div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:10px;">${content}</div>`;
+
             if (kind === 'component-grid') return `
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-                    ${[1,2,3,4,5,6].map(() => `<div style="padding:12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;gap:10px;">${line('70%')}${line('100%',0.4)}<div style="height:28px;border-radius:10px;background:rgba(124,58,237,0.18);"></div></div>`).join('')}
+                <div>
+                    ${label('Component library output')}
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;">
+                        ${['Button', 'Input', 'Card', 'Modal', 'Badge', 'Toggle'].map(name => card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);">${name}</div>
+                            ${box(24, 'rgba(96,165,250,0.15)')}
+                            ${line('80%', 0.3)}
+                        `)).join('')}
+                    </div>
                 </div>`;
-            if (kind === 'ab-test') return `<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;"><div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:10px;">${line('60%')}${line('90%')}${line('80%')}<div style="height:60px;border-radius:12px;background:rgba(255,255,255,0.06);"></div></div><div style="width:38px;height:38px;border-radius:999px;background:linear-gradient(135deg,#7C3AED,#EC4899);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;">vs</div><div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:10px;">${line('55%')}${line('88%')}${line('72%')}<div style="height:60px;border-radius:12px;background:rgba(255,255,255,0.06);"></div></div></div>`;
-            if (kind === 'dashboard-wireframe') return `<div style="display:grid;grid-template-columns:1.2fr .8fr;gap:12px;"><div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:10px;"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">${[1,2,3].map(()=>`<div style="height:44px;border-radius:12px;background:rgba(255,255,255,0.06);"></div>`).join('')}</div><div style="height:120px;border-radius:14px;background:rgba(124,58,237,0.12);"></div></div><div style="display:flex;flex-direction:column;gap:12px;">${[1,2,3].map(()=>`<div style="height:56px;border-radius:14px;background:rgba(255,255,255,0.05);"></div>`).join('')}</div></div>`;
-            if (kind === 'seo-callouts') return `<div style="padding:16px;border-radius:16px;background:rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:10px;">${line('48%')}${line('100%')}${line('95%')}${line('78%')}<div style="display:flex;gap:8px;">${[1,2,3].map(()=>`<div style="flex:1;height:40px;border-radius:12px;background:rgba(236,72,153,0.12);border:1px solid rgba(236,72,153,0.18);"></div>`).join('')}</div></div>`;
-            if (kind === 'docs-page') return `<div style="display:grid;grid-template-columns:.8fr 1.2fr;gap:12px;"><div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:8px;">${[1,2,3,4].map(()=>line('85%')).join('')}</div><div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:10px;">${line('45%')}<div style="height:72px;border-radius:14px;background:rgba(124,58,237,0.10);"></div>${line('80%')}${line('70%')}</div></div>`;
-            return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:10px;">${line('50%')}<div style="height:120px;border-radius:14px;background:rgba(255,255,255,0.06);"></div></div><div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:10px;">${line('62%')}<div style="height:120px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(236,72,153,0.12));"></div></div></div>`;
+
+            if (kind === 'ab-test') return `
+                <div>
+                    ${label('A/B test variant comparison')}
+                    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;margin-top:8px;">
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(96,165,250,0.7);">Variant A</div>
+                            ${line('70%')}${line('90%', 0.4)}
+                            ${box(48, 'rgba(96,165,250,0.12)')}
+                            <div style="display:flex;gap:6px;">${box(20, 'rgba(255,255,255,0.08)')}<div style="flex:1;">${box(20, 'rgba(96,165,250,0.18)')}</div></div>
+                        `)}
+                        <div style="width:36px;height:36px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);">vs</div>
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(16,185,129,0.7);">Variant B</div>
+                            ${line('60%')}${line('85%', 0.4)}
+                            ${box(48, 'rgba(16,185,129,0.12)')}
+                            <div style="display:flex;gap:6px;"><div style="flex:1;">${box(20, 'rgba(16,185,129,0.18)')}</div>${box(20, 'rgba(255,255,255,0.08)')}</div>
+                        `)}
+                    </div>
+                </div>`;
+
+            if (kind === 'dashboard-wireframe') return `
+                <div>
+                    ${label('Dashboard template layout')}
+                    <div style="display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:8px;">
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);">Main content</div>
+                            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                                ${['#3B82F6','#10B981','#F59E0B'].map(c => `<div style="height:40px;border-radius:10px;background:${c}18;border:1px solid ${c}22;"></div>`).join('')}
+                            </div>
+                            ${box(90, 'rgba(96,165,250,0.10)')}
+                            ${line('60%', 0.3)}
+                        `)}
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            ${['Stats panel', 'Activity feed', 'Quick actions'].map(t => card(`
+                                <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);">${t}</div>
+                                ${box(32, 'rgba(255,255,255,0.06)')}
+                            `)).join('')}
+                        </div>
+                    </div>
+                </div>`;
+
+            if (kind === 'seo-callouts') return `
+                <div>
+                    ${label('SEO optimization suggestions')}
+                    <div style="margin-top:8px;">
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);">Page content analysis</div>
+                            ${line('48%')}${line('100%', 0.4)}${line('95%', 0.3)}${line('78%', 0.4)}
+                            <div style="display:flex;gap:8px;margin-top:4px;">
+                                ${['Title tag', 'Meta description', 'H1 structure'].map(t => `<div style="flex:1;padding:8px;border-radius:10px;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.15);text-align:center;"><div style="font-size:9px;font-weight:600;color:rgba(245,158,11,0.6);">${t}</div></div>`).join('')}
+                            </div>
+                        `)}
+                    </div>
+                </div>`;
+
+            if (kind === 'docs-page') return `
+                <div>
+                    ${label('Documentation site output')}
+                    <div style="display:grid;grid-template-columns:.3fr 1fr;gap:14px;margin-top:8px;">
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);">Navigation</div>
+                            ${['Getting started', 'Components', 'API reference', 'Examples'].map(t => `<div style="font-size:10px;padding:5px 0;color:rgba(255,255,255,0.25);border-bottom:1px solid rgba(255,255,255,0.04);">${t}</div>`).join('')}
+                        `)}
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);">Component docs</div>
+                            ${line('40%')}
+                            ${box(56, 'rgba(96,165,250,0.10)')}
+                            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.25);margin-top:4px;">Props</div>
+                            ${line('90%', 0.3)}${line('75%', 0.3)}
+                        `)}
+                    </div>
+                </div>`;
+
+            if (kind === 'before-after') return `
+                <div>
+                    ${label('Clone / rebuild comparison')}
+                    <div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:10px;align-items:center;margin-top:8px;">
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(239,68,68,0.6);">Original</div>
+                            ${box(28, 'rgba(255,255,255,0.08)')}
+                            ${line('80%', 0.3)}${line('60%', 0.3)}
+                            ${box(48, 'rgba(255,255,255,0.05)')}
+                        `)}
+                        <div style="text-align:center;font-size:18px;color:rgba(255,255,255,0.2);">→</div>
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(16,185,129,0.6);">Rebuilt</div>
+                            ${box(28, 'rgba(96,165,250,0.12)')}
+                            ${line('80%', 0.5)}${line('60%', 0.5)}
+                            ${box(48, 'rgba(96,165,250,0.08)')}
+                        `)}
+                    </div>
+                </div>`;
+
+            // Default/fallback
+            return `
+                <div>
+                    ${label('Concept wireframe')}
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);">Input</div>
+                            ${line('50%')}
+                            ${box(80, 'rgba(255,255,255,0.06)')}
+                        `)}
+                        ${card(`
+                            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);">Output</div>
+                            ${line('62%')}
+                            ${box(80, 'rgba(96,165,250,0.08)')}
+                        `)}
+                    </div>
+                </div>`;
         }
 
         function intelSourceIcon(type) {
