@@ -4727,30 +4727,92 @@
         }
 
         // ── AI Analysis Function ──
-        // ── AI Analysis via Supabase Edge Function ──
-        // Calls the analyze-document Edge Function which proxies to OpenRouter (Claude Sonnet)
-        // No API keys in the frontend — everything stays server-side
-        async function ddAnalyzeDocument(text, filename) {
-            const supabaseUrl = SUPABASE_CONFIG.url;
-            const anonKey = SUPABASE_CONFIG.anonKey;
-            const functionUrl = `${supabaseUrl}/functions/v1/analyze-document`;
+        // ── AI Analysis via OpenClaw Gateway (Tailscale) ──
+        // Calls the gateway's OpenAI-compatible endpoint over Tailscale (HTTPS, private network)
+        // Uses your existing Claude/OpenAI subscriptions — zero extra cost
+        const DD_GATEWAY_URL = 'https://nouts-mac-mini.taild6c2b0.ts.net/v1/chat/completions';
 
-            const res = await fetch(functionUrl, {
+        function ddGetGatewayToken() {
+            return localStorage.getItem('dd_gateway_token') || '';
+        }
+        function ddSetGatewayToken(token) {
+            localStorage.setItem('dd_gateway_token', token);
+        }
+
+        function ddEnsureToken() {
+            const token = ddGetGatewayToken();
+            if (token) return token;
+            const input = prompt('Enter your OpenClaw Gateway token for AI analysis.\n\nFind it in: ~/.openclaw/openclaw.json → gateway.auth.token');
+            if (input && input.trim()) {
+                ddSetGatewayToken(input.trim());
+                return input.trim();
+            }
+            return null;
+        }
+
+        async function ddAnalyzeDocument(text, filename) {
+            const token = ddEnsureToken();
+            if (!token) {
+                throw new Error('No gateway token configured.');
+            }
+
+            // Truncate to ~12k words to fit context
+            const words = text.split(/\s+/);
+            const truncated = words.length > 12000 ? words.slice(0, 12000).join(' ') + '\n\n[... truncated]' : text;
+
+            const systemPrompt = `You are a document analysis AI. Analyze the provided document text and return a JSON object with exactly these fields:
+- "summary": A 3-paragraph summary of the document content. Be specific about what the document covers.
+- "key_insights": An array of exactly 5 key insight strings (concise bullet-point style).
+- "category": Exactly one of: "Business", "Technical", "Legal", "Research", "Marketing", "Other"
+- "tags": An array of exactly 5 relevant lowercase tag strings.
+
+Respond with ONLY valid JSON, no markdown fences, no extra text.`;
+
+            const res = await fetch(DD_GATEWAY_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${anonKey}`,
-                    'apikey': anonKey
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ text, filename })
+                body: JSON.stringify({
+                    model: 'openclaw:main',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: `Analyze this document (filename: "${filename}"):\n\n${truncated}` }
+                    ],
+                    temperature: 0.3
+                })
             });
 
             if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || `Edge function returned ${res.status}`);
+                const errText = await res.text().catch(() => '');
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem('dd_gateway_token');
+                    throw new Error('Invalid gateway token — cleared. Retry to enter a new one.');
+                }
+                throw new Error(`Gateway returned ${res.status}: ${errText.slice(0, 200)}`);
             }
 
-            return await res.json();
+            const data = await res.json();
+            const content = data.choices?.[0]?.message?.content || '';
+
+            let cleaned = content.trim();
+            if (cleaned.startsWith('```')) {
+                cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+            }
+
+            try {
+                const parsed = JSON.parse(cleaned);
+                return {
+                    summary: parsed.summary || 'No summary generated.',
+                    key_insights: Array.isArray(parsed.key_insights) ? parsed.key_insights.slice(0, 5) : [],
+                    category: ['Business','Technical','Legal','Research','Marketing','Other'].includes(parsed.category) ? parsed.category : 'Other',
+                    tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 5) : []
+                };
+            } catch (parseErr) {
+                console.error('Failed to parse AI response:', content);
+                throw new Error('AI returned invalid JSON. Check console for details.');
+            }
         }
 
         // ── Load documents from Supabase ──
