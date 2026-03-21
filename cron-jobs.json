@@ -1,0 +1,49 @@
+{
+  "updatedAt": "2026-03-21T08:55:00Z",
+  "jobs": [
+    {
+      "id": "03ab4996-6640-447e-bccb-f8b3694005a2",
+      "name": "Intelligence feed refresh",
+      "description": "Refreshes the Agent OS Intelligence feed and ingests newly discovered items into Supabase.",
+      "status": "active",
+      "schedule": "Every 6 hours at :15",
+      "agent": "Jarvis",
+      "lastRunLabel": "Not run yet",
+      "lastRunStatus": "success",
+      "nextRun": "2026-03-21T12:15:00+01:00"
+    },
+    {
+      "id": "e35b6377-e52d-41fb-9023-e9261b0455b3",
+      "name": "Morning News Briefing",
+      "description": "Generates the daily 8:00 AI and tech briefing with weather for Discord.",
+      "status": "active",
+      "schedule": "Daily at 8:00 AM",
+      "agent": "Jarvis",
+      "lastRunLabel": "Today at 8:00 AM",
+      "lastRunStatus": "success",
+      "nextRun": "2026-03-22T08:00:00+01:00"
+    },
+    {
+      "id": "d090a70b-cd41-44d9-bca5-03bf4d69a8e8",
+      "name": "Daily Backup",
+      "description": "Runs the workspace and vault backup flow and reports success or errors.",
+      "status": "active",
+      "schedule": "Daily at 3:00 AM",
+      "agent": "Jarvis",
+      "lastRunLabel": "Today at 3:00 AM",
+      "lastRunStatus": "success",
+      "nextRun": "2026-03-22T03:00:00+01:00"
+    },
+    {
+      "id": "8adbf1ac-7481-404f-b7e6-d03caed2a78d",
+      "name": "Nightly Memory Review",
+      "description": "Reviews the day, updates memory files, and keeps Jarvis context tidy.",
+      "status": "active",
+      "schedule": "Daily at 11:55 PM",
+      "agent": "Jarvis",
+      "lastRunLabel": "Yesterday at 11:55 PM",
+      "lastRunStatus": "success",
+      "nextRun": "2026-03-21T23:55:00+01:00"
+    }
+  ]
+}

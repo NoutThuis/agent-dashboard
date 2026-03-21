@@ -227,11 +227,118 @@ function inferSkillNote(agents) {
   return `${agents.join(' + ')} alignment`;
 }
 
+async function fetchRedditCandidates() {
+  if (!process.env.REDDIT_CLIENT_ID || !process.env.REDDIT_CLIENT_SECRET || !process.env.REDDIT_USER_AGENT) {
+    return [];
+  }
+
+  const auth = Buffer.from(`${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`).toString('base64');
+  const tokenRes = await fetch('https://www.reddit.com/api/v1/access_token', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': process.env.REDDIT_USER_AGENT,
+    },
+    body: new URLSearchParams({ grant_type: 'client_credentials' }).toString(),
+  });
+  if (!tokenRes.ok) return [];
+  const tokenJson = await tokenRes.json();
+  const token = tokenJson.access_token;
+  if (!token) return [];
+
+  const subreddits = ['aiagents', 'automation', 'SaaS', 'LocalLLaMA', 'frontend'];
+  const queries = ['agent workflow', 'automation use case', 'frontend agent', 'dashboard automation'];
+  const candidates = [];
+
+  for (const subreddit of subreddits) {
+    for (const query of queries) {
+      const url = new URL(`https://oauth.reddit.com/r/${subreddit}/search`);
+      url.searchParams.set('q', query);
+      url.searchParams.set('sort', 'new');
+      url.searchParams.set('limit', '6');
+      url.searchParams.set('restrict_sr', 'on');
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'User-Agent': process.env.REDDIT_USER_AGENT,
+        },
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      for (const child of json.data?.children || []) {
+        const post = child.data;
+        const description = (post.selftext || '').slice(0, 1200) || post.title;
+        candidates.push({
+          id: `reddit-${post.id}`,
+          title: post.title,
+          description,
+          sourceLabel: `Reddit r/${subreddit}`,
+          sourceBadge: `Found on Reddit r/${subreddit}`,
+          sourceType: 'reddit',
+          url: `https://reddit.com${post.permalink}`,
+          trendScore: clamp(Math.round(((post.score || 0) * 0.35) + ((post.num_comments || 0) * 1.1)), 35, 95),
+          complexityScore: 45,
+          rawSource: 'reddit-api',
+          tags: [subreddit, query],
+        });
+      }
+    }
+  }
+
+  return candidates;
+}
+
+async function fetchXCandidates() {
+  if (!process.env.X_BEARER_TOKEN) return [];
+  const queries = [
+    'AI agent workflow frontend lang:en -is:retweet',
+    'automation dashboard AI agents lang:en -is:retweet',
+    'OpenClaw OR agent orchestration lang:en -is:retweet',
+  ];
+  const candidates = [];
+
+  for (const query of queries) {
+    const url = new URL('https://api.twitter.com/2/tweets/search/recent');
+    url.searchParams.set('query', query);
+    url.searchParams.set('max_results', '10');
+    url.searchParams.set('tweet.fields', 'created_at,public_metrics,author_id');
+    url.searchParams.set('expansions', 'author_id');
+    url.searchParams.set('user.fields', 'username,name');
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${process.env.X_BEARER_TOKEN}` },
+    });
+    if (!res.ok) continue;
+    const json = await res.json();
+    const users = new Map((json.includes?.users || []).map((u) => [u.id, u]));
+    for (const tweet of json.data || []) {
+      const user = users.get(tweet.author_id);
+      const metrics = tweet.public_metrics || {};
+      candidates.push({
+        id: `x-${tweet.id}`,
+        title: (tweet.text || '').split('\n')[0].slice(0, 120),
+        description: tweet.text || '',
+        sourceLabel: user?.username ? `@${user.username}` : 'Twitter/X',
+        sourceBadge: user?.username ? `Found on Twitter/X via @${user.username}` : 'Found on Twitter/X',
+        sourceType: 'twitter',
+        url: user?.username ? `https://x.com/${user.username}/status/${tweet.id}` : null,
+        trendScore: clamp(Math.round((metrics.like_count || 0) * 0.7 + (metrics.retweet_count || 0) * 1.2 + (metrics.reply_count || 0) * 1.1), 35, 98),
+        complexityScore: 48,
+        rawSource: 'x-api',
+        tags: ['twitter', query],
+      });
+    }
+  }
+
+  return candidates;
+}
+
 async function fetchCandidates() {
   const candidates = [];
 
   // Adapter 1 — Brave/web-search style discovery (manual query list for now)
-  // TODO: replace with real web/X/Reddit adapters and pagination.
+  // TODO: replace with richer query generation and pagination.
   if (process.env.BRAVE_API_KEY) {
     const queries = [
       'AI automation use case Twitter Reddit dashboard frontend agent workflow',
@@ -266,7 +373,13 @@ async function fetchCandidates() {
     }
   }
 
-  // Adapter 2 — local scaffold batch so the script is testable before APIs exist.
+  // Adapter 2 — direct Reddit API when credentials are available.
+  candidates.push(...await fetchRedditCandidates());
+
+  // Adapter 3 — direct X API when credentials are available.
+  candidates.push(...await fetchXCandidates());
+
+  // Adapter 4 — local scaffold batch so the script is testable before APIs exist.
   // Remove once real adapters are live.
   candidates.push(
     {

@@ -1474,13 +1474,11 @@
         }
 
         // ── Cron Jobs Data & Functions ──────────────────
-        // TODO: Connect to real cron jobs table in Supabase
-        // Real Jarvis cron jobs — kept in sync manually for now
-        // TODO: fetch live from OpenClaw cron API when available
-        const CRON_JOBS = [
-            { id: 'morning-news', name: 'Morning News Briefing', description: 'Daily AI & tech news roundup plus Gaanderen weather. Delivers 5-7 curated stories with context to the Discord general channel.', schedule: 'Daily at 8:00 AM', status: 'active', icon: '📰' },
-            { id: 'nightly-review', name: 'Nightly Memory Review', description: 'Reviews the day\'s conversations and updates the memory architecture — daily log, MEMORY.md, Obsidian vault, and bridge notes.', schedule: 'Daily at 11:55 PM', status: 'active', icon: '🧠' },
-            { id: 'daily-backup', name: 'Daily Backup', description: 'Auto-commits and pushes workspace and Obsidian vault changes to GitHub for off-machine backup.', schedule: 'Daily at 3:00 AM', status: 'active', icon: '💾' },
+        // Uses generated cron-jobs.json so newly synced cron jobs can appear automatically.
+        const CRON_JOBS_FALLBACK = [
+            { id: 'morning-news', name: 'Morning News Briefing', description: 'Daily AI & tech news roundup plus Gaanderen weather. Delivers 5-7 curated stories with context to the Discord general channel.', schedule: 'Daily at 8:00 AM', status: 'active', icon: '📰', agent: 'Jarvis', lastRunLabel: 'N/A', lastRunStatus: 'success', nextRun: null },
+            { id: 'nightly-review', name: 'Nightly Memory Review', description: 'Reviews the day\'s conversations and updates the memory architecture — daily log, MEMORY.md, Obsidian vault, and bridge notes.', schedule: 'Daily at 11:55 PM', status: 'active', icon: '🧠', agent: 'Jarvis', lastRunLabel: 'N/A', lastRunStatus: 'success', nextRun: null },
+            { id: 'daily-backup', name: 'Daily Backup', description: 'Auto-commits and pushes workspace and Obsidian vault changes to GitHub for off-machine backup.', schedule: 'Daily at 3:00 AM', status: 'active', icon: '💾', agent: 'Jarvis', lastRunLabel: 'N/A', lastRunStatus: 'success', nextRun: null },
         ];
 
         function cronRelativeTime(ts) {
@@ -1515,22 +1513,39 @@
             return `<span style="font-size:10px;font-weight:600;color:#EF4444;background:rgba(239,68,68,0.12);padding:2px 8px;border-radius:6px;">Failed</span>`;
         }
 
-        function loadCronsTab() {
+        async function loadCronsTab() {
             const container = document.getElementById('crons-container');
             if (!container) return;
 
             const statusColors = { active: '#10B981', paused: '#F59E0B', failed: '#EF4444' };
+            const iconsByName = {
+                'Morning News Briefing': '📰',
+                'Nightly Memory Review': '🧠',
+                'Daily Backup': '💾',
+                'Intelligence feed refresh': '🔄',
+            };
+
+            let jobs = CRON_JOBS_FALLBACK;
+            try {
+                const res = await fetch('cron-jobs.json?t=' + Date.now());
+                if (!res.ok) throw new Error('cron-jobs.json fetch failed');
+                const data = await res.json();
+                if (Array.isArray(data.jobs) && data.jobs.length) jobs = data.jobs;
+            } catch (err) {
+                console.warn('Cron tab falling back to static jobs:', err);
+            }
 
             const subtitle = `<p style="font-size:14px;color:rgba(255,255,255,0.4);margin-bottom:28px;">Automated scheduled tasks</p>`;
 
-            const cards = CRON_JOBS.map((c, i) => {
+            const cards = jobs.map((c, i) => {
                 const sc = statusColors[c.status] || '#6B7280';
+                const icon = c.icon || iconsByName[c.name] || '⏱️';
                 return `
                     <div class="glass-card card-animate" style="padding:0;overflow:hidden;animation-delay:${i * 100}ms;">
                         <div style="padding:20px 28px;background:${c.status === 'active' ? 'rgba(16,185,129,0.08)' : c.status === 'paused' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)'};border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:14px;">
-                            <span style="font-size:22px;">${c.icon}</span>
+                            <span style="font-size:22px;">${icon}</span>
                             <div style="flex:1;min-width:0;">
-                                <div style="display:flex;align-items:center;gap:10px;">
+                                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                                     <span style="font-size:17px;font-weight:700;color:rgba(255,255,255,0.95);">${c.name}</span>
                                     <div style="display:flex;align-items:center;gap:5px;">
                                         <div style="width:7px;height:7px;border-radius:50%;background:${sc};box-shadow:0 0 8px ${sc}55;"></div>
@@ -1540,8 +1555,19 @@
                             </div>
                             <span style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);">🕐 ${c.schedule}</span>
                         </div>
-                        <div style="padding:20px 28px;">
+                        <div style="padding:20px 28px;display:grid;grid-template-columns:1.3fr .7fr .8fr;gap:18px;align-items:start;">
                             <div style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.65;">${c.description}</div>
+                            <div>
+                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Last Run</div>
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                    <span style="font-size:13px;color:rgba(255,255,255,0.68);">${c.lastRunLabel || 'N/A'}</span>
+                                    ${cronRunBadge(c.lastRunStatus || 'success')}
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-bottom:4px;">Next Run</div>
+                                <div style="font-size:13px;color:rgba(255,255,255,0.68);">${c.nextRun ? cronAbsoluteTime(c.nextRun) : 'N/A'}</div>
+                            </div>
                         </div>
                     </div>
                 `;
