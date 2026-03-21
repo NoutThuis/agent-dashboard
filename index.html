@@ -1889,10 +1889,6 @@
                                         </span>
                                     </div>
                                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                                        <span style="font-size:13px;color:rgba(255,255,255,0.6);">OpenClaw version</span>
-                                        <span id="settingsOpenClawVersion" style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);">—</span>
-                                    </div>
-                                    <div style="display:flex;justify-content:space-between;align-items:center;">
                                         <span style="font-size:13px;color:rgba(255,255,255,0.6);">Dashboard</span>
                                         <span style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);">Agent OS v1</span>
                                     </div>
@@ -5462,7 +5458,6 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
             // Gateway + Tailscale status
             settingsCheckGateway();
             settingsCheckTailscale();
-            settingsCheckVersion();
 
             // Gateway token status
             settingsUpdateTokenStatus();
@@ -5507,22 +5502,19 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
             const el = document.getElementById('settingsTailscaleStatus');
             if (!el) return;
             el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24;margin-right:6px;vertical-align:middle;"></span>Checking…';
-            fetch('https://nouts-mac-mini.taild6c2b0.ts.net/', { method: 'HEAD', mode: 'no-cors' })
-                .then(() => {
+            fetch('https://nouts-mac-mini.taild6c2b0.ts.net/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'openclaw:main', messages: [{ role: 'user', content: 'respond ok' }], max_tokens: 5 })
+            }).then(r => {
+                if (r.ok) {
                     el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(52,211,153,0.9);">Connected</span>';
-                })
-                .catch(() => {
-                    el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(239,68,68,0.9);">Unreachable</span>';
-                });
-        }
-
-        function settingsCheckVersion() {
-            const el = document.getElementById('settingsOpenClawVersion');
-            if (!el) return;
-            // Try to get version from gateway root
-            fetch('https://nouts-mac-mini.taild6c2b0.ts.net/', { mode: 'no-cors' })
-                .then(() => { el.textContent = 'Gateway active'; })
-                .catch(() => { el.textContent = 'Unknown'; });
+                } else {
+                    el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(251,191,36,0.9);">Reachable (HTTP ' + r.status + ')</span>';
+                }
+            }).catch(() => {
+                el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(239,68,68,0.9);">Unreachable</span>';
+            });
         }
 
         function settingsUpdateTokenStatus() {
