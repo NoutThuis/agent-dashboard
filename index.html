@@ -3705,8 +3705,8 @@
         // Tab switching is initialized at the top of the script block.
 
         // ── Tasks Tab ───────────────────────────────────
-        const AGENT_COLORS = { Mira: '#3B82F6', Ari: '#7C3AED', Noah: '#F59E0B', Lena: '#10B981', Manual: '#FFFFFF' };
-        const AGENT_ROLES = { Mira: 'Frontend Designer', Ari: 'Frontend Architect', Noah: 'Frontend Builder', Lena: 'Frontend Reviewer', Manual: 'User' };
+        const AGENT_COLORS = { Jarvis: '#06B6D4', Mira: '#3B82F6', Ari: '#7C3AED', Noah: '#F59E0B', Lena: '#10B981', Manual: '#FFFFFF' };
+        const AGENT_ROLES = { Jarvis: 'AI Assistant', Mira: 'Frontend Designer', Ari: 'Frontend Architect', Noah: 'Frontend Builder', Lena: 'Frontend Reviewer', Manual: 'User' };
         const CAT_COLORS = { Design: '#EC4899', Architecture: '#7C3AED', Development: '#10B981', Review: '#06B6D4' };
         const PRI_COLORS = { Urgent: '#EF4444', High: '#F97316', Normal: '#3B82F6', Low: '#6B7280' };
         const TRACK_COLORS = { 'On Track': '#10B981', 'At Risk': '#F59E0B', 'Off Track': '#EF4444' };
@@ -4078,6 +4078,7 @@
                         <option value="Ari">Ari</option>
                         <option value="Noah">Noah</option>
                         <option value="Lena">Lena</option>
+                        <option value="Jarvis">Jarvis</option>
                         <option value="Manual">Manual</option>
                     </select>
                     <select class="kanban-form-select" id="add-category-${status}">
@@ -4454,7 +4455,7 @@
             overlay.id = 'task-edit-overlay';
             overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
-            const agentOptions = ['Mira', 'Ari', 'Noah', 'Lena', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
+            const agentOptions = ['Jarvis', 'Mira', 'Ari', 'Noah', 'Lena', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
             const catOptions = ['Design', 'Architecture', 'Development', 'Review'].map(c => `<option value="${c}" ${task.category === c ? 'selected' : ''}>${c}</option>`).join('');
             const priOptions = ['Urgent', 'High', 'Normal', 'Low'].map(p => `<option value="${p}" ${task.priority === p ? 'selected' : ''}>${p}</option>`).join('');
             const trackOptions = ['On Track', 'At Risk', 'Off Track'].map(t2 => `<option value="${t2}" ${task.track_status === t2 ? 'selected' : ''}>${t2}</option>`).join('');
