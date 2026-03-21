@@ -1385,8 +1385,16 @@
         }
         .dd-progress-bar-fill {
             height: 100%; border-radius: 2px;
-            background: linear-gradient(90deg, #7c3aed, #06b6d4);
+            background: linear-gradient(90deg, #7c3aed, #06b6d4, #7c3aed);
+            background-size: 200% 100%;
             transition: width 0.4s ease;
+        }
+        .dd-progress-bar-fill.active-animate {
+            animation: dd-bar-flow 1.2s linear infinite;
+        }
+        @keyframes dd-bar-flow {
+            0% { background-position: 200% 0; }
+            100% { background-position: 0% 0; }
         }
         .dd-progress-stages { display: flex; gap: 16px; margin-top: 10px; }
         .dd-stage {
@@ -4687,6 +4695,12 @@
             if (bar) bar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
         }
 
+        function ddSetProgressAnimatedState(id, active) {
+            const bar = document.getElementById('dd-bar-' + id);
+            if (!bar) return;
+            bar.classList.toggle('active-animate', !!active);
+        }
+
         function ddStopProgressAnimation(id) {
             const existing = ddProgressAnimators.get(id);
             if (existing) {
@@ -4729,16 +4743,20 @@
             }
             if (stageNum === 1) {
                 ddStopProgressAnimation(id);
+                ddSetProgressAnimatedState(id, true);
                 ddStartProgressAnimation(id, 2, 18, 1200);
             } else if (stageNum === 2) {
                 ddStopProgressAnimation(id);
+                ddSetProgressAnimatedState(id, true);
                 ddStartProgressAnimation(id, 18, 52, 1800);
             } else if (stageNum === 3 && status !== 'failed') {
                 ddStopProgressAnimation(id);
+                ddSetProgressAnimatedState(id, true);
                 ddStartProgressAnimation(id, 52, 92, 15000);
             } else if (stageNum === 4) {
                 ddStopProgressAnimation(id);
-                ddSetProgress(id, status === 'failed' ? 100 : 100);
+                ddSetProgressAnimatedState(id, false);
+                ddSetProgress(id, 100);
             }
         }
 
@@ -4995,8 +5013,8 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
             countEl.textContent = ddDocuments.length;
 
             const loadErrorHtml = ddLastLoadError ? `
-                <div class="dd-error-box" style="margin-bottom:12px;">
-                    <span class="dd-error-text">Supabase load failed — showing cached docs if available.</span>
+                <div class="glass-card" style="margin-bottom:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.035);">
+                    <span style="font-size:12px;color:rgba(255,255,255,0.62);">Showing cached documents. Cloud sync read is unavailable right now.</span>
                     <button class="dd-btn" onclick="ddLoadDocuments()">Retry</button>
                 </div>` : '';
 
