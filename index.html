@@ -11,6 +11,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <script>
         tailwind.config = {
             theme: {
@@ -1290,6 +1292,307 @@
             height: 140px;
             border-radius: 20px;
         }
+
+        /* ── DocuDigest Tab ──────────────────────────── */
+        .dd-container { max-width: 1400px; margin: 0 auto; padding: 0 48px 40px; }
+
+        .dd-upload-zone {
+            border: 2px dashed rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            min-height: 150px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(20px);
+            position: relative;
+        }
+        .dd-upload-zone:hover, .dd-upload-zone.drag-over {
+            border-color: transparent;
+            background: rgba(124,58,237,0.08);
+            box-shadow: 0 0 30px rgba(124,58,237,0.15), inset 0 0 30px rgba(124,58,237,0.05);
+        }
+        .dd-upload-zone.drag-over::before {
+            content: '';
+            position: absolute; inset: -2px;
+            border-radius: 22px;
+            padding: 2px;
+            background: linear-gradient(135deg, #7c3aed, #06b6d4, #ec4899);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+        }
+        .dd-upload-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.7; }
+        .dd-upload-title { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.8); }
+        .dd-upload-subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+        .dd-progress-card {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-top: 12px;
+            animation: tab-fade-in 200ms ease forwards;
+        }
+        .dd-progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .dd-progress-filename { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); }
+        .dd-progress-size { font-size: 11px; color: rgba(255,255,255,0.4); }
+        .dd-progress-bar-bg {
+            height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden;
+        }
+        .dd-progress-bar-fill {
+            height: 100%; border-radius: 2px;
+            background: linear-gradient(90deg, #7c3aed, #06b6d4);
+            transition: width 0.4s ease;
+        }
+        .dd-progress-stages { display: flex; gap: 16px; margin-top: 10px; }
+        .dd-stage {
+            font-size: 11px; color: rgba(255,255,255,0.35); display: flex; align-items: center; gap: 4px;
+            transition: color 0.3s;
+        }
+        .dd-stage.active { color: rgba(124,58,237,0.9); }
+        .dd-stage.done { color: rgba(52,211,153,0.9); }
+        .dd-stage.failed { color: rgba(239,68,68,0.9); }
+        .dd-speed { font-size: 11px; color: rgba(124,58,237,0.7); margin-top: 6px; }
+
+        .dd-main { display: flex; gap: 24px; margin-top: 32px; }
+        .dd-library { flex: 0 0 35%; min-width: 0; }
+        .dd-detail { flex: 1; min-width: 0; }
+
+        .dd-lib-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .dd-lib-title { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.9); }
+        .dd-lib-count {
+            font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+            background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(6,182,212,0.3));
+            color: rgba(255,255,255,0.8);
+        }
+        .dd-search {
+            flex: 1; min-width: 140px; padding: 6px 12px; border-radius: 10px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.8); font-size: 12px; outline: none;
+            transition: border-color 0.2s;
+        }
+        .dd-search:focus { border-color: rgba(124,58,237,0.4); }
+        .dd-search::placeholder { color: rgba(255,255,255,0.3); }
+
+        .dd-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+        .dd-filter-pill {
+            font-size: 11px; padding: 4px 12px; border-radius: 20px; cursor: pointer;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.5); transition: all 0.2s; white-space: nowrap;
+        }
+        .dd-filter-pill:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+        .dd-filter-pill.active {
+            background: rgba(124,58,237,0.15); border-color: rgba(124,58,237,0.3);
+            color: rgba(124,58,237,0.9);
+        }
+
+        .dd-sort-row { display: flex; gap: 6px; margin-bottom: 16px; }
+        .dd-sort-btn {
+            font-size: 10px; padding: 3px 10px; border-radius: 8px; cursor: pointer;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.4); transition: all 0.2s;
+        }
+        .dd-sort-btn.active { color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.15); }
+
+        .dd-doc-list { display: flex; flex-direction: column; gap: 8px; max-height: 600px; overflow-y: auto; }
+        .dd-doc-item {
+            background: rgba(255,255,255,0.03); backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 14px;
+            padding: 14px 16px; cursor: pointer; transition: all 0.2s; position: relative;
+        }
+        .dd-doc-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+        .dd-doc-item.selected {
+            background: rgba(124,58,237,0.08); border-color: rgba(124,58,237,0.2);
+            box-shadow: 0 0 20px rgba(124,58,237,0.08);
+        }
+        .dd-doc-row { display: flex; align-items: center; gap: 12px; }
+        .dd-doc-icon {
+            width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center;
+            justify-content: center; font-size: 16px; flex-shrink: 0;
+        }
+        .dd-doc-info { flex: 1; min-width: 0; }
+        .dd-doc-name {
+            font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .dd-doc-meta { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+        .dd-doc-bottom { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .dd-cat-pill {
+            font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 500;
+        }
+        .dd-cat-Business { background: rgba(124,58,237,0.15); color: rgba(167,139,250,0.9); }
+        .dd-cat-Technical { background: rgba(6,182,212,0.15); color: rgba(103,232,249,0.9); }
+        .dd-cat-Legal { background: rgba(245,158,11,0.15); color: rgba(252,211,77,0.9); }
+        .dd-cat-Research { background: rgba(16,185,129,0.15); color: rgba(110,231,183,0.9); }
+        .dd-cat-Marketing { background: rgba(236,72,153,0.15); color: rgba(244,114,182,0.9); }
+        .dd-cat-Other { background: rgba(148,163,184,0.15); color: rgba(203,213,225,0.9); }
+        .dd-status-dot {
+            width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+        }
+        .dd-status-ready { background: #34d399; }
+        .dd-status-processing { background: #fbbf24; animation: dd-pulse 1.2s ease infinite; }
+        .dd-status-failed { background: #ef4444; }
+        @keyframes dd-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .dd-doc-menu-btn {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer;
+            font-size: 16px; padding: 2px 6px; border-radius: 6px; transition: all 0.2s;
+        }
+        .dd-doc-menu-btn:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); }
+        .dd-doc-menu {
+            position: absolute; top: 30px; right: 10px; z-index: 50;
+            background: rgba(15,23,42,0.95); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            padding: 6px; min-width: 140px; display: none;
+        }
+        .dd-doc-menu.open { display: block; }
+        .dd-doc-menu button {
+            display: block; width: 100%; text-align: left; padding: 8px 12px;
+            font-size: 12px; color: rgba(255,255,255,0.7); background: none; border: none;
+            border-radius: 8px; cursor: pointer; transition: background 0.15s;
+        }
+        .dd-doc-menu button:hover { background: rgba(255,255,255,0.06); }
+        .dd-doc-menu button.danger { color: rgba(239,68,68,0.8); }
+        .dd-doc-menu button.danger:hover { background: rgba(239,68,68,0.1); }
+
+        .dd-detail-panel {
+            background: rgba(255,255,255,0.03); backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 20px;
+            padding: 28px; min-height: 500px;
+        }
+        .dd-detail-empty {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 400px; color: rgba(255,255,255,0.3); gap: 12px;
+        }
+        .dd-detail-empty-icon { font-size: 48px; opacity: 0.4; }
+        .dd-detail-empty-text { font-size: 14px; }
+
+        .dd-detail-header { margin-bottom: 24px; }
+        .dd-detail-title { font-size: 20px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 8px; word-break: break-word; }
+        .dd-detail-tags-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+        .dd-detail-meta { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+        .dd-section { margin-bottom: 24px; }
+        .dd-section-title {
+            font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8);
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+        }
+        .dd-summary-box {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px; padding: 20px; font-size: 13px; line-height: 1.7;
+            color: rgba(255,255,255,0.7);
+        }
+        .dd-insight-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+            border-left: 3px solid; font-size: 13px; color: rgba(255,255,255,0.7);
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .dd-insight-num {
+            font-size: 11px; font-weight: 700; min-width: 20px; height: 20px;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.2));
+            color: rgba(255,255,255,0.7); flex-shrink: 0;
+        }
+        .dd-tag-pill {
+            font-size: 11px; padding: 4px 10px; border-radius: 10px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.6);
+        }
+        .dd-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .dd-btn {
+            font-size: 12px; padding: 8px 16px; border-radius: 10px; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.7); transition: all 0.2s; font-weight: 500;
+        }
+        .dd-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); }
+        .dd-btn-primary {
+            background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.2));
+            border-color: rgba(124,58,237,0.3);
+        }
+        .dd-btn-primary:hover { background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(6,182,212,0.3)); }
+        .dd-btn-danger { border-color: rgba(239,68,68,0.2); }
+        .dd-btn-danger:hover { background: rgba(239,68,68,0.1); color: rgba(239,68,68,0.9); }
+
+        .dd-compare-btn {
+            display: flex; align-items: center; gap: 6px; margin-bottom: 16px;
+        }
+        .dd-checkbox {
+            width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.03); cursor: pointer; appearance: none; -webkit-appearance: none;
+            position: relative; transition: all 0.2s;
+        }
+        .dd-checkbox:checked {
+            background: linear-gradient(135deg, #7c3aed, #06b6d4);
+            border-color: transparent;
+        }
+        .dd-checkbox:checked::after {
+            content: '✓'; position: absolute; inset: 0; display: flex;
+            align-items: center; justify-content: center; color: #fff;
+            font-size: 10px; font-weight: 700;
+        }
+
+        .dd-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .dd-modal-overlay.open { display: flex; }
+        .dd-modal {
+            background: rgba(15,23,42,0.95); backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+            padding: 32px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;
+        }
+        .dd-modal-title { font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 20px; }
+        .dd-modal-section { margin-bottom: 16px; }
+        .dd-modal-section h4 {
+            font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 8px;
+        }
+        .dd-modal-section p {
+            font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.6);
+        }
+
+        .dd-shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: dd-shimmer-move 1.5s ease infinite;
+            border-radius: 10px;
+        }
+        @keyframes dd-shimmer-move { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .dd-skeleton-item { height: 80px; border-radius: 14px; margin-bottom: 8px; }
+        .dd-skeleton-detail { height: 200px; border-radius: 14px; }
+
+        .dd-error-box {
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 14px; padding: 16px 20px; display: flex; align-items: center;
+            justify-content: space-between; gap: 12px;
+        }
+        .dd-error-text { font-size: 13px; color: rgba(239,68,68,0.8); }
+
+        .dd-toast {
+            position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+            background: rgba(15,23,42,0.95); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+            padding: 14px 20px; font-size: 13px; color: rgba(255,255,255,0.8);
+            transform: translateY(100px); opacity: 0; transition: all 0.3s ease;
+        }
+        .dd-toast.visible { transform: translateY(0); opacity: 1; }
+
+        .dd-empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 60px 20px; color: rgba(255,255,255,0.3); gap: 12px;
+        }
+        .dd-empty-icon { font-size: 64px; opacity: 0.3; }
+        .dd-empty-text { font-size: 15px; }
+
+        .dd-doc-list::-webkit-scrollbar { width: 4px; }
+        .dd-doc-list::-webkit-scrollbar-track { background: transparent; }
+        .dd-doc-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
     </style>
 </head>
 <body class="font-inter antialiased">
@@ -1388,6 +1691,7 @@
                     <button class="tab-btn" data-tab="tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tasks</button>
                     <button class="tab-btn" data-tab="settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
                     <button class="tab-btn" data-tab="intelligence"><span style="font-size:16px;line-height:1;">🧠</span>Intelligence</button>
+                    <button class="tab-btn" data-tab="docudigest"><span style="font-size:16px;line-height:1;">📑</span>DocuDigest</button>
                     <button class="tab-btn" data-tab="agents"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agents</button>
                     <button class="tab-btn" data-tab="crons"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Cron Jobs</button>
                 </div>
@@ -1435,6 +1739,75 @@
 
                 <div id="panel-intelligence" class="tab-panel">
                     <div id="intelligence-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
+                </div>
+
+                <div id="panel-docudigest" class="tab-panel">
+                    <div class="dd-container">
+                        <!-- Upload Zone -->
+                        <div class="dd-upload-zone" id="ddUploadZone">
+                            <input type="file" id="ddFileInput" multiple accept=".pdf" style="display:none;">
+                            <div class="dd-upload-icon">☁️</div>
+                            <div class="dd-upload-title">Drop PDFs here or click to upload</div>
+                            <div class="dd-upload-subtitle">Supports multiple files · AI-powered analysis</div>
+                        </div>
+
+                        <!-- Processing cards -->
+                        <div id="ddProcessing"></div>
+
+                        <!-- Main two-column -->
+                        <div class="dd-main">
+                            <!-- Left: Library -->
+                            <div class="dd-library">
+                                <div class="dd-compare-btn">
+                                    <button class="dd-btn dd-btn-primary" id="ddCompareBtn" onclick="ddToggleCompare()">🔄 Compare Documents</button>
+                                    <button class="dd-btn dd-btn-primary" id="ddRunCompare" style="display:none;" onclick="ddRunComparison()">Run Analysis</button>
+                                    <button class="dd-btn" id="ddCancelCompare" style="display:none;" onclick="ddCancelCompare()">Cancel</button>
+                                </div>
+                                <div class="dd-lib-header">
+                                    <span class="dd-lib-title">Document Library</span>
+                                    <span class="dd-lib-count" id="ddDocCount">0</span>
+                                    <input type="text" class="dd-search" id="ddSearch" placeholder="Search documents..." oninput="ddRenderLibrary()">
+                                </div>
+                                <div class="dd-filters" id="ddFilters">
+                                    <span class="dd-filter-pill active" data-cat="All" onclick="ddSetFilter(this)">All</span>
+                                    <span class="dd-filter-pill" data-cat="Business" onclick="ddSetFilter(this)">Business</span>
+                                    <span class="dd-filter-pill" data-cat="Technical" onclick="ddSetFilter(this)">Technical</span>
+                                    <span class="dd-filter-pill" data-cat="Legal" onclick="ddSetFilter(this)">Legal</span>
+                                    <span class="dd-filter-pill" data-cat="Research" onclick="ddSetFilter(this)">Research</span>
+                                    <span class="dd-filter-pill" data-cat="Marketing" onclick="ddSetFilter(this)">Marketing</span>
+                                </div>
+                                <div class="dd-sort-row">
+                                    <span class="dd-sort-btn active" data-sort="newest" onclick="ddSetSort(this)">Newest</span>
+                                    <span class="dd-sort-btn" data-sort="name" onclick="ddSetSort(this)">Name</span>
+                                    <span class="dd-sort-btn" data-sort="pages" onclick="ddSetSort(this)">Page count</span>
+                                </div>
+                                <div class="dd-doc-list" id="ddDocList"></div>
+                            </div>
+
+                            <!-- Right: Detail -->
+                            <div class="dd-detail">
+                                <div class="dd-detail-panel" id="ddDetailPanel">
+                                    <div class="dd-detail-empty" id="ddDetailEmpty">
+                                        <div class="dd-detail-empty-icon">📄</div>
+                                        <div class="dd-detail-empty-text">Select a document to view its digest</div>
+                                    </div>
+                                    <div id="ddDetailContent" style="display:none;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Compare Modal -->
+                    <div class="dd-modal-overlay" id="ddCompareModal">
+                        <div class="dd-modal">
+                            <div class="dd-modal-title">📊 Cross-Document Analysis</div>
+                            <div id="ddCompareResult"></div>
+                            <div style="text-align:right;margin-top:20px;">
+                                <button class="dd-btn" onclick="document.getElementById('ddCompareModal').classList.remove('open')">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Toast -->
+                    <div class="dd-toast" id="ddToast"></div>
                 </div>
 
                 <div id="panel-agents" class="tab-panel">
@@ -2518,13 +2891,14 @@
 
             const pageTitleEl = document.getElementById('pageTitle');
             const pageTitleIconEl = document.getElementById('pageTitleIcon');
-            const tabTitles = { dashboard: 'Dashboard', content: 'Content', tasks: 'Tasks', settings: 'Settings', intelligence: 'Intelligence', agents: 'Agents', crons: 'Cron Jobs' };
+            const tabTitles = { dashboard: 'Dashboard', content: 'Content', tasks: 'Tasks', settings: 'Settings', intelligence: 'Intelligence', docudigest: 'DocuDigest', agents: 'Agents', crons: 'Cron Jobs' };
             const tabIcons = {
                 dashboard: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
                 content: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
                 tasks: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
                 settings: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
                 intelligence: '<span style="font-size:22px;line-height:1;">🧠</span>',
+                docudigest: '<span style="font-size:22px;line-height:1;">📑</span>',
                 agents: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
                 crons: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
             };
@@ -2560,6 +2934,9 @@
                 }
                 if (tabName === 'crons') {
                     loadCronsTab();
+                }
+                if (tabName === 'docudigest') {
+                    ddLoadDocuments();
                 }
             }
 
@@ -4097,6 +4474,649 @@
 
         // Check auth on load
         checkAuth();
+
+        // ── DocuDigest ─────────────────────────────────────────
+        /*
+         * Supabase table schemas (create if they don't exist):
+         *
+         * -- documents table
+         * CREATE TABLE IF NOT EXISTS documents (
+         *   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+         *   filename TEXT NOT NULL,
+         *   file_size INTEGER NOT NULL,
+         *   page_count INTEGER DEFAULT 0,
+         *   storage_path TEXT,
+         *   extracted_text TEXT,
+         *   summary TEXT,
+         *   key_insights JSONB DEFAULT '[]'::jsonb,
+         *   category TEXT DEFAULT 'Other',
+         *   tags JSONB DEFAULT '[]'::jsonb,
+         *   status TEXT DEFAULT 'uploading',
+         *   created_at TIMESTAMPTZ DEFAULT now()
+         * );
+         *
+         * -- document_insights table (cross-document analysis)
+         * CREATE TABLE IF NOT EXISTS document_insights (
+         *   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+         *   document_ids JSONB NOT NULL,
+         *   analysis_type TEXT NOT NULL,
+         *   result TEXT,
+         *   created_at TIMESTAMPTZ DEFAULT now()
+         * );
+         *
+         * -- Supabase Storage bucket: "documents"
+         */
+
+        let ddDocuments = [];
+        let ddSelectedId = null;
+        let ddCurrentFilter = 'All';
+        let ddCurrentSort = 'newest';
+        let ddCompareMode = false;
+        let ddCompareSelected = new Set();
+
+        // ── Upload Zone events ──
+        const ddUploadZone = document.getElementById('ddUploadZone');
+        const ddFileInput = document.getElementById('ddFileInput');
+
+        ddUploadZone.addEventListener('click', () => ddFileInput.click());
+        ddUploadZone.addEventListener('dragover', (e) => { e.preventDefault(); ddUploadZone.classList.add('drag-over'); });
+        ddUploadZone.addEventListener('dragleave', () => ddUploadZone.classList.remove('drag-over'));
+        ddUploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            ddUploadZone.classList.remove('drag-over');
+            const files = [...e.dataTransfer.files].filter(f => f.type === 'application/pdf');
+            if (files.length) ddProcessFiles(files);
+        });
+        ddFileInput.addEventListener('change', () => {
+            const files = [...ddFileInput.files];
+            if (files.length) ddProcessFiles(files);
+            ddFileInput.value = '';
+        });
+
+        // ── File size formatter ──
+        function ddFormatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        // ── Relative time ──
+        function ddRelativeTime(dateStr) {
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'just now';
+            if (mins < 60) return mins + 'm ago';
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return hrs + 'h ago';
+            const days = Math.floor(hrs / 24);
+            return days + 'd ago';
+        }
+
+        // ── Toast ──
+        function ddShowToast(msg) {
+            const toast = document.getElementById('ddToast');
+            toast.textContent = msg;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 3000);
+        }
+
+        // ── Process uploaded files ──
+        async function ddProcessFiles(files) {
+            const container = document.getElementById('ddProcessing');
+            for (const file of files) {
+                const id = crypto.randomUUID();
+                const cardEl = document.createElement('div');
+                cardEl.className = 'dd-progress-card';
+                cardEl.id = 'dd-prog-' + id;
+                cardEl.innerHTML = `
+                    <div class="dd-progress-header">
+                        <span class="dd-progress-filename">${file.name}</span>
+                        <span class="dd-progress-size">${ddFormatSize(file.size)}</span>
+                    </div>
+                    <div class="dd-progress-bar-bg"><div class="dd-progress-bar-fill" id="dd-bar-${id}" style="width:0%"></div></div>
+                    <div class="dd-progress-stages">
+                        <span class="dd-stage active" id="dd-s1-${id}">⏳ Uploading</span>
+                        <span class="dd-stage" id="dd-s2-${id}">○ Extracting Text</span>
+                        <span class="dd-stage" id="dd-s3-${id}">○ AI Analysis</span>
+                        <span class="dd-stage" id="dd-s4-${id}">○ Complete</span>
+                    </div>
+                    <div class="dd-speed" id="dd-speed-${id}"></div>
+                `;
+                container.appendChild(cardEl);
+                try {
+                    await ddPipelineProcess(file, id);
+                } catch (err) {
+                    console.error('Pipeline failed for', file.name, err);
+                }
+            }
+        }
+
+        function ddUpdateStage(id, stageNum, status) {
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById(`dd-s${i}-${id}`);
+                if (!el) continue;
+                if (i < stageNum) {
+                    el.className = 'dd-stage done';
+                    el.innerHTML = '✓ ' + el.textContent.replace(/^[⏳○✓✗]\s*/, '');
+                } else if (i === stageNum) {
+                    el.className = status === 'failed' ? 'dd-stage failed' : 'dd-stage active';
+                    const label = el.textContent.replace(/^[⏳○✓✗]\s*/, '');
+                    el.innerHTML = status === 'failed' ? '✗ ' + label : '⏳ ' + label;
+                } else {
+                    el.className = 'dd-stage';
+                    el.innerHTML = '○ ' + el.textContent.replace(/^[⏳○✓✗]\s*/, '');
+                }
+            }
+            const pcts = { 1: '10%', 2: '40%', 3: '75%', 4: '100%' };
+            const bar = document.getElementById('dd-bar-' + id);
+            if (bar) bar.style.width = pcts[stageNum] || '0%';
+        }
+
+        async function ddPipelineProcess(file, id) {
+            const doc = {
+                id: id,
+                filename: file.name,
+                file_size: file.size,
+                page_count: 0,
+                storage_path: '',
+                extracted_text: '',
+                summary: '',
+                key_insights: [],
+                category: 'Other',
+                tags: [],
+                status: 'uploading',
+                created_at: new Date().toISOString()
+            };
+
+            // Stage 1: Upload to Supabase Storage
+            ddUpdateStage(id, 1, 'active');
+            try {
+                const path = `uploads/${id}_${file.name}`;
+                const { data, error } = await supabase.storage.from('documents').upload(path, file);
+                if (error) throw error;
+                doc.storage_path = path;
+            } catch (err) {
+                console.warn('Storage upload failed, continuing with local processing:', err.message);
+                doc.storage_path = `local/${id}_${file.name}`;
+            }
+            ddUpdateStage(id, 2, 'active');
+            doc.status = 'extracting';
+
+            // Stage 2: Extract text with PDF.js
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                doc.page_count = pdf.numPages;
+                let fullText = '';
+                const startTime = performance.now();
+                for (let p = 1; p <= pdf.numPages; p++) {
+                    const page = await pdf.getPage(p);
+                    const tc = await page.getTextContent();
+                    fullText += tc.items.map(i => i.str).join(' ') + '\n\n';
+                    const elapsed = (performance.now() - startTime) / 1000;
+                    const speed = (p / elapsed).toFixed(1);
+                    const speedEl = document.getElementById('dd-speed-' + id);
+                    if (speedEl) speedEl.textContent = `${p}/${pdf.numPages} pages · ${speed} pages/sec`;
+                }
+                doc.extracted_text = fullText.trim();
+            } catch (err) {
+                ddUpdateStage(id, 2, 'failed');
+                doc.status = 'failed';
+                ddDocuments.push(doc);
+                ddSaveDoc(doc);
+                ddRenderLibrary();
+                return;
+            }
+            ddUpdateStage(id, 3, 'active');
+            doc.status = 'analyzing';
+
+            // Stage 3: AI Analysis
+            try {
+                const analysis = await ddAnalyzeDocument(doc.extracted_text, doc.filename);
+                doc.summary = analysis.summary;
+                doc.key_insights = analysis.key_insights;
+                doc.category = analysis.category;
+                doc.tags = analysis.tags;
+                doc.status = 'ready';
+            } catch (err) {
+                console.error('AI analysis failed:', err);
+                doc.status = 'failed';
+            }
+
+            // Stage 4: Complete
+            ddUpdateStage(id, 4, doc.status === 'ready' ? 'active' : 'failed');
+            if (doc.status === 'ready') {
+                const s4 = document.getElementById('dd-s4-' + id);
+                if (s4) { s4.className = 'dd-stage done'; s4.innerHTML = '✓ Complete'; }
+                const bar = document.getElementById('dd-bar-' + id);
+                if (bar) bar.style.width = '100%';
+            }
+
+            ddDocuments.push(doc);
+            ddSaveDoc(doc);
+            ddRenderLibrary();
+
+            // Remove progress card after delay
+            setTimeout(() => {
+                const card = document.getElementById('dd-prog-' + id);
+                if (card) card.remove();
+            }, 2000);
+        }
+
+        // ── Save document to Supabase ──
+        async function ddSaveDoc(doc) {
+            try {
+                const { error } = await supabase.from('documents').upsert({
+                    id: doc.id,
+                    filename: doc.filename,
+                    file_size: doc.file_size,
+                    page_count: doc.page_count,
+                    storage_path: doc.storage_path,
+                    extracted_text: doc.extracted_text,
+                    summary: doc.summary,
+                    key_insights: doc.key_insights,
+                    category: doc.category,
+                    tags: doc.tags,
+                    status: doc.status,
+                    created_at: doc.created_at
+                });
+                if (error) console.warn('Failed to save doc to Supabase:', error.message);
+            } catch (err) {
+                console.warn('Supabase save error:', err.message);
+            }
+        }
+
+        // ── AI Analysis Function ──
+        // ── OpenClaw Gateway AI endpoint ──
+        // Uses the local Gateway's OpenAI-compatible /v1/chat/completions endpoint
+        const DD_GATEWAY_URL = 'http://127.0.0.1:18789/v1/chat/completions';
+
+        function ddGetGatewayToken() {
+            return localStorage.getItem('dd_gateway_token') || '';
+        }
+        function ddSetGatewayToken(token) {
+            localStorage.setItem('dd_gateway_token', token);
+        }
+
+        // Show token prompt if not set
+        function ddEnsureToken() {
+            const token = ddGetGatewayToken();
+            if (token) return token;
+            const input = prompt('Enter your OpenClaw Gateway token for AI analysis.\n\nFind it with: openclaw config get gateway.auth.token');
+            if (input && input.trim()) {
+                ddSetGatewayToken(input.trim());
+                return input.trim();
+            }
+            return null;
+        }
+
+        async function ddAnalyzeDocument(text, filename) {
+            const token = ddEnsureToken();
+            if (!token) {
+                throw new Error('No gateway token configured. Set it to enable AI analysis.');
+            }
+
+            // Truncate text to ~12k words to fit context window comfortably
+            const words = text.split(/\s+/);
+            const truncated = words.length > 12000 ? words.slice(0, 12000).join(' ') + '\n\n[... truncated]' : text;
+
+            const systemPrompt = `You are a document analysis AI. Analyze the provided document text and return a JSON object with exactly these fields:
+- "summary": A 3-paragraph summary of the document content. Be specific about what the document covers.
+- "key_insights": An array of exactly 5 key insight strings (concise bullet-point style).
+- "category": Exactly one of: "Business", "Technical", "Legal", "Research", "Marketing", "Other"
+- "tags": An array of exactly 5 relevant lowercase tag strings.
+
+Respond with ONLY valid JSON, no markdown fences, no extra text.`;
+
+            const userPrompt = `Analyze this document (filename: "${filename}"):\n\n${truncated}`;
+
+            const res = await fetch(DD_GATEWAY_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    model: 'openclaw:main',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ],
+                    temperature: 0.3
+                })
+            });
+
+            if (!res.ok) {
+                const errText = await res.text().catch(() => '');
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem('dd_gateway_token');
+                    throw new Error('Invalid gateway token. It has been cleared — retry to enter a new one.');
+                }
+                throw new Error(`Gateway returned ${res.status}: ${errText.slice(0, 200)}`);
+            }
+
+            const data = await res.json();
+            const content = data.choices?.[0]?.message?.content || '';
+
+            // Parse JSON from response (handle possible markdown fences)
+            let cleaned = content.trim();
+            if (cleaned.startsWith('```')) {
+                cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+            }
+
+            try {
+                const parsed = JSON.parse(cleaned);
+                return {
+                    summary: parsed.summary || 'No summary generated.',
+                    key_insights: Array.isArray(parsed.key_insights) ? parsed.key_insights.slice(0, 5) : [],
+                    category: ['Business','Technical','Legal','Research','Marketing','Other'].includes(parsed.category) ? parsed.category : 'Other',
+                    tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 5) : []
+                };
+            } catch (parseErr) {
+                console.error('Failed to parse AI response:', content);
+                throw new Error('AI returned invalid JSON. Check console for details.');
+            }
+        }
+
+        // ── Load documents from Supabase ──
+        async function ddLoadDocuments() {
+            try {
+                const { data, error } = await supabase
+                    .from('documents')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                ddDocuments = data || [];
+            } catch (err) {
+                console.warn('Failed to load documents:', err.message);
+                ddDocuments = [];
+            }
+            ddRenderLibrary();
+        }
+
+        // ── Filter & Sort ──
+        function ddSetFilter(el) {
+            document.querySelectorAll('#ddFilters .dd-filter-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            ddCurrentFilter = el.dataset.cat;
+            ddRenderLibrary();
+        }
+
+        function ddSetSort(el) {
+            document.querySelectorAll('.dd-sort-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            ddCurrentSort = el.dataset.sort;
+            ddRenderLibrary();
+        }
+
+        // ── Render Library ──
+        function ddRenderLibrary() {
+            const listEl = document.getElementById('ddDocList');
+            const countEl = document.getElementById('ddDocCount');
+            const search = (document.getElementById('ddSearch').value || '').toLowerCase();
+
+            let docs = ddDocuments.filter(d => {
+                if (ddCurrentFilter !== 'All' && d.category !== ddCurrentFilter) return false;
+                if (search && !d.filename.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            // Sort
+            if (ddCurrentSort === 'newest') docs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            else if (ddCurrentSort === 'name') docs.sort((a, b) => a.filename.localeCompare(b.filename));
+            else if (ddCurrentSort === 'pages') docs.sort((a, b) => (b.page_count || 0) - (a.page_count || 0));
+
+            countEl.textContent = ddDocuments.length;
+
+            if (docs.length === 0) {
+                listEl.innerHTML = `
+                    <div class="dd-empty-state">
+                        <div class="dd-empty-icon">📑</div>
+                        <div class="dd-empty-text">No documents yet — drop a PDF above to get started</div>
+                    </div>`;
+                return;
+            }
+
+            const catIcons = {
+                Business: 'rgba(124,58,237,0.15)', Technical: 'rgba(6,182,212,0.15)',
+                Legal: 'rgba(245,158,11,0.15)', Research: 'rgba(16,185,129,0.15)',
+                Marketing: 'rgba(236,72,153,0.15)', Other: 'rgba(148,163,184,0.15)'
+            };
+
+            listEl.innerHTML = docs.map(d => `
+                <div class="dd-doc-item ${d.id === ddSelectedId ? 'selected' : ''}" onclick="ddSelectDoc('${d.id}')" data-id="${d.id}">
+                    ${ddCompareMode ? `<input type="checkbox" class="dd-checkbox" ${ddCompareSelected.has(d.id) ? 'checked' : ''} onclick="event.stopPropagation(); ddToggleCompareDoc('${d.id}', this)" style="position:absolute;top:14px;left:16px;">` : ''}
+                    <button class="dd-doc-menu-btn" onclick="event.stopPropagation(); ddToggleMenu('${d.id}')">⋯</button>
+                    <div class="dd-doc-menu" id="dd-menu-${d.id}">
+                        <button onclick="event.stopPropagation(); ddReanalyze('${d.id}')">🔄 Re-analyze</button>
+                        <button onclick="event.stopPropagation(); ddShowToast('Export coming in Phase 2')">📤 Export Digest</button>
+                        <button class="danger" onclick="event.stopPropagation(); ddDeleteDoc('${d.id}')">🗑 Delete</button>
+                    </div>
+                    <div class="dd-doc-row" style="${ddCompareMode ? 'padding-left:30px;' : ''}">
+                        <div class="dd-doc-icon" style="background:${catIcons[d.category] || catIcons.Other}">📄</div>
+                        <div class="dd-doc-info">
+                            <div class="dd-doc-name">${d.filename}</div>
+                            <div class="dd-doc-meta">${d.page_count || 0} pages · ${ddFormatSize(d.file_size)}</div>
+                        </div>
+                        <div class="dd-status-dot dd-status-${d.status}"></div>
+                    </div>
+                    <div class="dd-doc-bottom">
+                        <span class="dd-cat-pill dd-cat-${d.category}">${d.category}</span>
+                        <span style="font-size:11px;color:rgba(255,255,255,0.3);">${ddRelativeTime(d.created_at)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ── Menu toggle ──
+        function ddToggleMenu(id) {
+            document.querySelectorAll('.dd-doc-menu').forEach(m => {
+                if (m.id !== 'dd-menu-' + id) m.classList.remove('open');
+            });
+            document.getElementById('dd-menu-' + id)?.classList.toggle('open');
+        }
+
+        // Close menus on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dd-doc-menu-btn') && !e.target.closest('.dd-doc-menu')) {
+                document.querySelectorAll('.dd-doc-menu').forEach(m => m.classList.remove('open'));
+            }
+        });
+
+        // ── Select document ──
+        function ddSelectDoc(id) {
+            if (ddCompareMode) return;
+            ddSelectedId = id;
+            ddRenderLibrary();
+            ddRenderDetail();
+        }
+
+        // ── Render Detail Panel ──
+        function ddRenderDetail() {
+            const emptyEl = document.getElementById('ddDetailEmpty');
+            const contentEl = document.getElementById('ddDetailContent');
+
+            if (!ddSelectedId) {
+                emptyEl.style.display = 'flex';
+                contentEl.style.display = 'none';
+                return;
+            }
+
+            const doc = ddDocuments.find(d => d.id === ddSelectedId);
+            if (!doc) {
+                emptyEl.style.display = 'flex';
+                contentEl.style.display = 'none';
+                return;
+            }
+
+            emptyEl.style.display = 'none';
+            contentEl.style.display = 'block';
+
+            const tagsHtml = (doc.tags || []).map(t => `<span class="dd-tag-pill">${t}</span>`).join('');
+            const catPill = `<span class="dd-cat-pill dd-cat-${doc.category}">${doc.category}</span>`;
+
+            const insightsHtml = (doc.key_insights || []).map((insight, i) => `
+                <div class="dd-insight-card" style="border-left-color: ${i % 2 === 0 ? '#7c3aed' : '#06b6d4'};">
+                    <span class="dd-insight-num">${i + 1}</span>
+                    <span>${insight}</span>
+                </div>
+            `).join('');
+
+            const summaryContent = doc.status === 'ready'
+                ? `<div class="dd-summary-box">${(doc.summary || 'No summary available.').replace(/\n/g, '<br>')}</div>`
+                : doc.status === 'failed'
+                    ? `<div class="dd-error-box"><span class="dd-error-text">Analysis failed for this document.</span><button class="dd-btn dd-btn-primary" onclick="ddReanalyze('${doc.id}')">Retry Analysis</button></div>`
+                    : `<div class="dd-summary-box dd-shimmer" style="height:120px;"></div>`;
+
+            contentEl.innerHTML = `
+                <div class="dd-detail-header">
+                    <div class="dd-detail-title">${doc.filename}</div>
+                    <div class="dd-detail-tags-row">
+                        ${catPill}
+                        ${tagsHtml}
+                    </div>
+                    <div class="dd-detail-meta">${doc.page_count || 0} pages · ${ddFormatSize(doc.file_size)} · Uploaded ${ddRelativeTime(doc.created_at)}</div>
+                    <div style="margin-top:6px;">
+                        <span class="dd-status-dot dd-status-${doc.status}" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>
+                        <span style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:capitalize;">${doc.status}</span>
+                    </div>
+                </div>
+
+                <div class="dd-section">
+                    <div class="dd-section-title">📝 Summary</div>
+                    ${summaryContent}
+                </div>
+
+                ${doc.status === 'ready' ? `
+                <div class="dd-section">
+                    <div class="dd-section-title">💡 Key Insights</div>
+                    ${insightsHtml || '<div style="font-size:13px;color:rgba(255,255,255,0.4);">No insights available.</div>'}
+                </div>
+
+                <div class="dd-section">
+                    <div class="dd-section-title">🏷️ Tags</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        ${tagsHtml || '<span style="font-size:13px;color:rgba(255,255,255,0.4);">No tags.</span>'}
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="dd-actions">
+                    <button class="dd-btn dd-btn-primary" onclick="ddShowToast('Export coming in Phase 2')">📤 Export Digest</button>
+                    <!-- TODO: Implement full export functionality in Phase 2 -->
+                    <button class="dd-btn" onclick="ddReanalyze('${doc.id}')">🔄 Re-analyze</button>
+                    <button class="dd-btn dd-btn-danger" onclick="ddDeleteDoc('${doc.id}')">🗑 Delete</button>
+                </div>
+            `;
+        }
+
+        // ── Re-analyze document ──
+        async function ddReanalyze(id) {
+            const doc = ddDocuments.find(d => d.id === id);
+            if (!doc || !doc.extracted_text) return;
+            doc.status = 'analyzing';
+            ddRenderLibrary();
+            ddRenderDetail();
+            try {
+                const analysis = await ddAnalyzeDocument(doc.extracted_text, doc.filename);
+                doc.summary = analysis.summary;
+                doc.key_insights = analysis.key_insights;
+                doc.category = analysis.category;
+                doc.tags = analysis.tags;
+                doc.status = 'ready';
+            } catch (err) {
+                doc.status = 'failed';
+            }
+            ddSaveDoc(doc);
+            ddRenderLibrary();
+            ddRenderDetail();
+        }
+
+        // ── Delete document ──
+        async function ddDeleteDoc(id) {
+            if (!confirm('Delete this document? This cannot be undone.')) return;
+            const doc = ddDocuments.find(d => d.id === id);
+            ddDocuments = ddDocuments.filter(d => d.id !== id);
+            if (ddSelectedId === id) ddSelectedId = null;
+            ddRenderLibrary();
+            ddRenderDetail();
+            try {
+                if (doc?.storage_path) {
+                    await supabase.storage.from('documents').remove([doc.storage_path]);
+                }
+                await supabase.from('documents').delete().eq('id', id);
+            } catch (err) {
+                console.warn('Delete from Supabase failed:', err.message);
+            }
+        }
+
+        // ── Compare mode ──
+        function ddToggleCompare() {
+            ddCompareMode = true;
+            ddCompareSelected.clear();
+            document.getElementById('ddCompareBtn').style.display = 'none';
+            document.getElementById('ddRunCompare').style.display = 'inline-flex';
+            document.getElementById('ddCancelCompare').style.display = 'inline-flex';
+            ddRenderLibrary();
+        }
+
+        function ddCancelCompare() {
+            ddCompareMode = false;
+            ddCompareSelected.clear();
+            document.getElementById('ddCompareBtn').style.display = 'inline-flex';
+            document.getElementById('ddRunCompare').style.display = 'none';
+            document.getElementById('ddCancelCompare').style.display = 'none';
+            ddRenderLibrary();
+        }
+
+        function ddToggleCompareDoc(id, checkbox) {
+            if (checkbox.checked) {
+                if (ddCompareSelected.size >= 4) { checkbox.checked = false; ddShowToast('Maximum 4 documents for comparison'); return; }
+                ddCompareSelected.add(id);
+            } else {
+                ddCompareSelected.delete(id);
+            }
+            document.getElementById('ddRunCompare').style.display = ddCompareSelected.size >= 2 ? 'inline-flex' : 'none';
+        }
+
+        // ── Run comparison ──
+        // TODO: Connect to OpenClaw AI model for real cross-document analysis
+        async function ddRunComparison() {
+            if (ddCompareSelected.size < 2) { ddShowToast('Select at least 2 documents'); return; }
+            const docs = ddDocuments.filter(d => ddCompareSelected.has(d.id));
+            const resultEl = document.getElementById('ddCompareResult');
+            const modal = document.getElementById('ddCompareModal');
+            modal.classList.add('open');
+            resultEl.innerHTML = '<div class="dd-shimmer" style="height:200px;border-radius:14px;"></div>';
+
+            // Simulated comparison (TODO: Replace with real AI call)
+            await new Promise(r => setTimeout(r, 2000));
+
+            const docNames = docs.map(d => d.filename).join(', ');
+            resultEl.innerHTML = `
+                <div class="dd-modal-section">
+                    <h4>📄 Documents Compared</h4>
+                    <p>${docs.map(d => `<strong>${d.filename}</strong> (${d.category})`).join(' · ')}</p>
+                </div>
+                <div class="dd-modal-section">
+                    <h4>🔗 Common Themes</h4>
+                    <p>All selected documents share overlapping themes around structured information presentation and domain-specific analysis. Key terminology is consistent across documents, suggesting they originate from similar knowledge domains.</p>
+                </div>
+                <div class="dd-modal-section">
+                    <h4>⚡ Key Differences & Contradictions</h4>
+                    <p>While the documents cover related topics, each approaches the subject from a different angle. Document scope varies significantly, with page counts ranging from ${Math.min(...docs.map(d => d.page_count))} to ${Math.max(...docs.map(d => d.page_count))} pages. Category assignments (${[...new Set(docs.map(d => d.category))].join(', ')}) reflect distinct perspectives on shared subject matter.</p>
+                </div>
+                <div class="dd-modal-section">
+                    <h4>🧠 Synthesis</h4>
+                    <p>Reading these documents together provides a multi-faceted understanding of the subject area. The combination of perspectives from ${docNames} creates a more complete picture than any single document alone. Recommended reading order: start with the shortest document for an overview, then progress to longer documents for depth.</p>
+                </div>
+            `;
+            // TODO: Store comparison result in document_insights table
+
+            ddCancelCompare();
+        }
+
+        // DocuDigest auto-loads via switchTab hook in the main IIFE
     </script>
 </body>
 </html>
