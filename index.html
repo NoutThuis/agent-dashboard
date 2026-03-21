@@ -4559,6 +4559,8 @@
         let ddCompareMode = false;
         let ddCompareSelected = new Set();
         let ddSelectedModel = localStorage.getItem('dd_analysis_model') || 'anthropic/claude-opus-4-6';
+        let ddLastLoadError = '';
+        const DD_CACHE_KEY = 'docudigest_documents_cache_v1';
 
         // ── Upload Zone events ──
         const ddUploadZone = document.getElementById('ddUploadZone');
@@ -4613,6 +4615,38 @@
             toast.textContent = msg;
             toast.classList.add('visible');
             setTimeout(() => toast.classList.remove('visible'), 3000);
+        }
+
+        function ddNormalizeDoc(doc) {
+            return {
+                key_insights: [],
+                tags: [],
+                category: 'Other',
+                status: 'ready',
+                analysis_model: 'unknown',
+                analysis_error: '',
+                ...doc,
+            };
+        }
+
+        function ddSaveCache() {
+            try {
+                localStorage.setItem(DD_CACHE_KEY, JSON.stringify(ddDocuments));
+            } catch (err) {
+                console.warn('DocuDigest cache save failed:', err.message);
+            }
+        }
+
+        function ddLoadCache() {
+            try {
+                const raw = localStorage.getItem(DD_CACHE_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed.map(ddNormalizeDoc) : [];
+            } catch (err) {
+                console.warn('DocuDigest cache load failed:', err.message);
+                return [];
+            }
         }
 
         // ── Process uploaded files ──
@@ -4680,6 +4714,8 @@
                 category: 'Other',
                 tags: [],
                 status: 'uploading',
+                analysis_model: ddSelectedModel,
+                analysis_error: '',
                 created_at: new Date().toISOString()
             };
 
@@ -4732,9 +4768,12 @@
                 doc.key_insights = analysis.key_insights;
                 doc.category = analysis.category;
                 doc.tags = analysis.tags;
+                doc.analysis_model = analysis.model || ddSelectedModel;
+                doc.analysis_error = '';
                 doc.status = 'ready';
             } catch (err) {
                 console.error('AI analysis failed:', err);
+                doc.analysis_error = err.message || 'Unknown analysis error';
                 doc.status = 'failed';
             }
 
@@ -4760,6 +4799,7 @@
 
         // ── Save document to Supabase ──
         async function ddSaveDoc(doc) {
+            ddSaveCache();
             try {
                 const { error } = await supabase.from('documents').upsert({
                     id: doc.id,
@@ -4775,9 +4815,13 @@
                     status: doc.status,
                     created_at: doc.created_at
                 });
-                if (error) console.warn('Failed to save doc to Supabase:', error.message);
+                if (error) {
+                    console.warn('Failed to save doc to Supabase:', error.message);
+                    ddShowToast('Saved locally. Supabase sync failed.');
+                }
             } catch (err) {
                 console.warn('Supabase save error:', err.message);
+                ddShowToast('Saved locally. Supabase sync failed.');
             }
         }
 
@@ -4843,18 +4887,33 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
 
         // ── Load documents from Supabase ──
         async function ddLoadDocuments() {
+            const cachedDocs = ddLoadCache();
+            ddLastLoadError = '';
             try {
                 const { data, error } = await supabase
                     .from('documents')
                     .select('*')
                     .order('created_at', { ascending: false });
                 if (error) throw error;
-                ddDocuments = data || [];
+                const remoteDocs = (data || []).map(ddNormalizeDoc);
+                const merged = new Map();
+                cachedDocs.forEach(doc => merged.set(doc.id, ddNormalizeDoc(doc)));
+                remoteDocs.forEach(doc => {
+                    const cached = merged.get(doc.id) || {};
+                    merged.set(doc.id, ddNormalizeDoc({ ...doc, analysis_model: cached.analysis_model || doc.analysis_model || 'unknown', analysis_error: cached.analysis_error || '' }));
+                });
+                ddDocuments = Array.from(merged.values());
+                ddSaveCache();
             } catch (err) {
                 console.warn('Failed to load documents:', err.message);
-                ddDocuments = [];
+                ddLastLoadError = err.message || 'Unknown load error';
+                ddDocuments = cachedDocs;
+                if (cachedDocs.length) {
+                    ddShowToast('Loaded cached documents. Supabase fetch failed.');
+                }
             }
             ddRenderLibrary();
+            ddRenderDetail();
         }
 
         // ── Filter & Sort ──
@@ -4891,8 +4950,14 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
 
             countEl.textContent = ddDocuments.length;
 
+            const loadErrorHtml = ddLastLoadError ? `
+                <div class="dd-error-box" style="margin-bottom:12px;">
+                    <span class="dd-error-text">Supabase load failed — showing cached docs if available.</span>
+                    <button class="dd-btn" onclick="ddLoadDocuments()">Retry</button>
+                </div>` : '';
+
             if (docs.length === 0) {
-                listEl.innerHTML = `
+                listEl.innerHTML = `${loadErrorHtml}
                     <div class="dd-empty-state">
                         <div class="dd-empty-icon">📑</div>
                         <div class="dd-empty-text">No documents yet — drop a PDF above to get started</div>
@@ -4906,7 +4971,7 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
                 Marketing: 'rgba(236,72,153,0.15)', Other: 'rgba(148,163,184,0.15)'
             };
 
-            listEl.innerHTML = docs.map(d => `
+            listEl.innerHTML = `${loadErrorHtml}` + docs.map(d => `
                 <div class="dd-doc-item ${d.id === ddSelectedId ? 'selected' : ''}" onclick="ddSelectDoc('${d.id}')" data-id="${d.id}">
                     ${ddCompareMode ? `<input type="checkbox" class="dd-checkbox" ${ddCompareSelected.has(d.id) ? 'checked' : ''} onclick="event.stopPropagation(); ddToggleCompareDoc('${d.id}', this)" style="position:absolute;top:14px;left:16px;">` : ''}
                     <button class="dd-doc-menu-btn" onclick="event.stopPropagation(); ddToggleMenu('${d.id}')">⋯</button>
@@ -4925,6 +4990,7 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
                     </div>
                     <div class="dd-doc-bottom">
                         <span class="dd-cat-pill dd-cat-${d.category}">${d.category}</span>
+                        <span class="dd-tag-pill" style="font-size:10px;padding:2px 8px;">${(d.analysis_model || 'unknown').includes('gpt') ? 'GPT 5.4' : (d.analysis_model || '').includes('opus') ? 'Opus 4.6' : 'Unknown model'}</span>
                         <span style="font-size:11px;color:rgba(255,255,255,0.3);">${ddRelativeTime(d.created_at)}</span>
                     </div>
                 </div>
@@ -4988,7 +5054,7 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
             const summaryContent = doc.status === 'ready'
                 ? `<div class="dd-summary-box">${(doc.summary || 'No summary available.').replace(/\n/g, '<br>')}</div>`
                 : doc.status === 'failed'
-                    ? `<div class="dd-error-box"><span class="dd-error-text">Analysis failed for this document.</span><button class="dd-btn dd-btn-primary" onclick="ddReanalyze('${doc.id}')">Retry Analysis</button></div>`
+                    ? `<div class="dd-error-box"><span class="dd-error-text">Analysis failed for this document.${doc.analysis_error ? ` ${doc.analysis_error}` : ''}</span><button class="dd-btn dd-btn-primary" onclick="ddReanalyze('${doc.id}')">Retry Analysis</button></div>`
                     : `<div class="dd-summary-box dd-shimmer" style="height:120px;"></div>`;
 
             contentEl.innerHTML = `
@@ -4996,6 +5062,7 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
                     <div class="dd-detail-title">${doc.filename}</div>
                     <div class="dd-detail-tags-row">
                         ${catPill}
+                        <span class="dd-tag-pill">${(doc.analysis_model || 'unknown').includes('gpt') ? 'GPT 5.4' : (doc.analysis_model || '').includes('opus') ? 'Claude Opus 4.6' : 'Unknown model'}</span>
                         ${tagsHtml}
                     </div>
                     <div class="dd-detail-meta">${doc.page_count || 0} pages · ${ddFormatSize(doc.file_size)} · Uploaded ${ddRelativeTime(doc.created_at)}</div>
@@ -5046,8 +5113,11 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
                 doc.key_insights = analysis.key_insights;
                 doc.category = analysis.category;
                 doc.tags = analysis.tags;
+                doc.analysis_model = analysis.model || ddSelectedModel;
+                doc.analysis_error = '';
                 doc.status = 'ready';
             } catch (err) {
+                doc.analysis_error = err.message || 'Unknown analysis error';
                 doc.status = 'failed';
             }
             ddSaveDoc(doc);
@@ -5063,6 +5133,7 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
             if (ddSelectedId === id) ddSelectedId = null;
             ddRenderLibrary();
             ddRenderDetail();
+            ddSaveCache();
             try {
                 if (doc?.storage_path) {
                     await supabase.storage.from('documents').remove([doc.storage_path]);
@@ -5070,6 +5141,7 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
                 await supabase.from('documents').delete().eq('id', id);
             } catch (err) {
                 console.warn('Delete from Supabase failed:', err.message);
+                ddShowToast('Deleted locally. Supabase delete failed.');
             }
         }
 
