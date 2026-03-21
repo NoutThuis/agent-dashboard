@@ -1327,6 +1327,46 @@
         .dd-upload-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.7; }
         .dd-upload-title { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.8); }
         .dd-upload-subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+        .dd-model-picker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 6px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(16px);
+            position: relative;
+            z-index: 2;
+        }
+        .dd-model-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.45);
+            padding: 0 6px 0 8px;
+            white-space: nowrap;
+        }
+        .dd-model-btn {
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.6);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .dd-model-btn:hover {
+            color: rgba(255,255,255,0.82);
+            background: rgba(255,255,255,0.08);
+        }
+        .dd-model-btn.active {
+            color: rgba(255,255,255,0.92);
+            border-color: rgba(124,58,237,0.28);
+            background: linear-gradient(135deg, rgba(124,58,237,0.22), rgba(6,182,212,0.16));
+            box-shadow: 0 8px 24px rgba(124,58,237,0.14);
+        }
 
         .dd-progress-card {
             background: rgba(255,255,255,0.04);
@@ -1749,6 +1789,11 @@
                             <div class="dd-upload-icon">☁️</div>
                             <div class="dd-upload-title">Drop PDFs here or click to upload</div>
                             <div class="dd-upload-subtitle">Supports multiple files · AI-powered analysis</div>
+                            <div class="dd-model-picker" onclick="event.stopPropagation();">
+                                <span class="dd-model-label">Digest with</span>
+                                <button class="dd-model-btn active" id="ddModelClaude" onclick="ddSetModel('anthropic/claude-opus-4-6')">Claude Opus 4.6</button>
+                                <button class="dd-model-btn" id="ddModelGPT" onclick="ddSetModel('openai-codex/gpt-5.4')">GPT 5.4</button>
+                            </div>
                         </div>
 
                         <!-- Processing cards -->
@@ -4513,10 +4558,20 @@
         let ddCurrentSort = 'newest';
         let ddCompareMode = false;
         let ddCompareSelected = new Set();
+        let ddSelectedModel = localStorage.getItem('dd_analysis_model') || 'anthropic/claude-opus-4-6';
 
         // ── Upload Zone events ──
         const ddUploadZone = document.getElementById('ddUploadZone');
         const ddFileInput = document.getElementById('ddFileInput');
+
+        function ddSetModel(model) {
+            ddSelectedModel = model;
+            localStorage.setItem('dd_analysis_model', model);
+            document.getElementById('ddModelClaude')?.classList.toggle('active', model === 'anthropic/claude-opus-4-6');
+            document.getElementById('ddModelGPT')?.classList.toggle('active', model === 'openai-codex/gpt-5.4');
+        }
+
+        ddSetModel(ddSelectedModel);
 
         ddUploadZone.addEventListener('click', () => ddFileInput.click());
         ddUploadZone.addEventListener('dragover', (e) => { e.preventDefault(); ddUploadZone.classList.add('drag-over'); });
@@ -4672,7 +4727,7 @@
 
             // Stage 3: AI Analysis
             try {
-                const analysis = await ddAnalyzeDocument(doc.extracted_text, doc.filename);
+                const analysis = await ddAnalyzeDocument(doc.extracted_text, doc.filename, ddSelectedModel);
                 doc.summary = analysis.summary;
                 doc.key_insights = analysis.key_insights;
                 doc.category = analysis.category;
@@ -4727,28 +4782,63 @@
         }
 
         // ── AI Analysis Function ──
-        // ── AI Analysis via Supabase Edge Function → OpenClaw Gateway ──
-        // Browser → Supabase Edge Function → Tailscale → Gateway → Claude
-        // No CORS issues, no API keys in frontend, uses your existing subscriptions
-        async function ddAnalyzeDocument(text, filename) {
-            const functionUrl = `${SUPABASE_CONFIG.url}/functions/v1/analyze-document`;
+        // ── AI Analysis via Tailscale CORS proxy → OpenClaw Gateway ──
+        // Browser → Tailscale HTTPS proxy → local gateway → Claude/OpenAI via your subscriptions
+        const DD_GATEWAY_URL = 'https://nouts-mac-mini.taild6c2b0.ts.net/v1/chat/completions';
 
-            const res = await fetch(functionUrl, {
+        async function ddAnalyzeDocument(text, filename, model = ddSelectedModel) {
+            const words = text.split(/\s+/);
+            const truncated = words.length > 12000 ? words.slice(0, 12000).join(' ') + '\n\n[... truncated]' : text;
+
+            const systemPrompt = `You are a document analysis AI. Analyze the provided document text and return a JSON object with exactly these fields:
+- "summary": A 3-paragraph summary of the document content. Be specific about what the document covers.
+- "key_insights": An array of exactly 5 key insight strings (concise bullet-point style).
+- "category": Exactly one of: "Business", "Technical", "Legal", "Research", "Marketing", "Other"
+- "tags": An array of exactly 5 relevant lowercase tag strings.
+
+Respond with ONLY valid JSON, no markdown fences, no extra text.`;
+
+            const res = await fetch(DD_GATEWAY_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
-                    'apikey': SUPABASE_CONFIG.anonKey
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ text, filename })
+                body: JSON.stringify({
+                    model,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: `Analyze this document (filename: "${filename}"):\n\n${truncated}` }
+                    ],
+                    temperature: 0.3
+                })
             });
 
             if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || `Analysis failed (${res.status})`);
+                const errText = await res.text().catch(() => '');
+                throw new Error(`Analysis failed (${res.status}): ${errText.slice(0, 200)}`);
             }
 
-            return await res.json();
+            const data = await res.json();
+            const content = data.choices?.[0]?.message?.content || '';
+
+            let cleaned = content.trim();
+            if (cleaned.startsWith('```')) {
+                cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+            }
+
+            try {
+                const parsed = JSON.parse(cleaned);
+                return {
+                    summary: parsed.summary || 'No summary generated.',
+                    key_insights: Array.isArray(parsed.key_insights) ? parsed.key_insights.slice(0, 5) : [],
+                    category: ['Business','Technical','Legal','Research','Marketing','Other'].includes(parsed.category) ? parsed.category : 'Other',
+                    tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 5) : [],
+                    model
+                };
+            } catch (parseErr) {
+                console.error('Failed to parse AI response:', content);
+                throw new Error('AI returned invalid JSON. Check console for details.');
+            }
         }
 
         // ── Load documents from Supabase ──
@@ -4951,7 +5041,7 @@
             ddRenderLibrary();
             ddRenderDetail();
             try {
-                const analysis = await ddAnalyzeDocument(doc.extracted_text, doc.filename);
+                const analysis = await ddAnalyzeDocument(doc.extracted_text, doc.filename, ddSelectedModel);
                 doc.summary = analysis.summary;
                 doc.key_insights = analysis.key_insights;
                 doc.category = analysis.category;
