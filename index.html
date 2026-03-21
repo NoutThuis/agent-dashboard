@@ -1889,6 +1889,10 @@
                                         </span>
                                     </div>
                                     <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:13px;color:rgba(255,255,255,0.6);">OpenClaw</span>
+                                        <span id="settingsOpenClawVersion" style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);">—</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
                                         <span style="font-size:13px;color:rgba(255,255,255,0.6);">Dashboard</span>
                                         <span style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);">Agent OS v1</span>
                                     </div>
@@ -5455,9 +5459,10 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
                 supaEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;vertical-align:middle;"></span><span style="color:rgba(239,68,68,0.9);">Not initialized</span>';
             }
 
-            // Gateway + Tailscale status
+            // Gateway + Tailscale status + version
             settingsCheckGateway();
             settingsCheckTailscale();
+            settingsCheckVersion();
 
             // Gateway token status
             settingsUpdateTokenStatus();
@@ -5496,6 +5501,16 @@ Respond with ONLY valid JSON, no markdown fences, no extra text.`;
             settingsCheckGateway();
             settingsCheckTailscale();
             ddShowToast('Testing gateway connection…');
+        }
+
+        function settingsCheckVersion() {
+            const el = document.getElementById('settingsOpenClawVersion');
+            if (!el) return;
+            el.textContent = 'Fetching…';
+            fetch('https://nouts-mac-mini.taild6c2b0.ts.net/version')
+                .then(r => r.json())
+                .then(data => { el.textContent = data.version || 'Unknown'; })
+                .catch(() => { el.textContent = 'Unavailable'; });
         }
 
         function settingsCheckTailscale() {
