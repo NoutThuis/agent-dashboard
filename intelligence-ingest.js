@@ -79,12 +79,25 @@ function sourceTypeFromLabel(label = '') {
   return 'other';
 }
 
+function hostnameFromUrl(url = '') {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+function clamp(n, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, n));
+}
+
 function scoreCandidate(candidate) {
   const title = candidate.title || 'Untitled use case';
   const description = candidate.description || '';
   const tags = candidate.tags || [];
+  const host = hostnameFromUrl(candidate.url);
 
-  const skillSignals = [
+  const positiveSignals = [
     ['dashboard', 18],
     ['frontend', 18],
     ['ui', 16],
@@ -92,22 +105,57 @@ function scoreCandidate(candidate) {
     ['landing page', 15],
     ['automation', 12],
     ['component', 14],
-    ['workflow', 10],
+    ['workflow', 12],
     ['documentation', 12],
+    ['agent', 10],
+    ['orchestration', 14],
+    ['research', 14],
+    ['brief', 10],
+    ['review', 8],
   ];
 
-  let skillMatch = 40;
-  const hay = `${title} ${description} ${tags.join(' ')}`.toLowerCase();
-  for (const [needle, points] of skillSignals) {
+  const negativeSignals = [
+    ['awesome', 18],
+    ['collection', 16],
+    ['directory', 14],
+    ['list of', 12],
+    ['job board', 16],
+    ['crypto', 22],
+    ['trading bot', 20],
+    ['casino', 30],
+    ['adult', 30],
+    ['seo agency', 10],
+  ];
+
+  const hay = `${title} ${description} ${tags.join(' ')} ${candidate.sourceLabel || ''} ${host}`.toLowerCase();
+
+  let skillMatch = 42;
+  for (const [needle, points] of positiveSignals) {
     if (hay.includes(needle)) skillMatch += points;
   }
-  skillMatch = Math.max(0, Math.min(100, skillMatch));
+  for (const [needle, penalty] of negativeSignals) {
+    if (hay.includes(needle)) skillMatch -= penalty;
+  }
 
-  const trendScore = Math.max(0, Math.min(100, candidate.trendScore ?? candidate.engagementScore ?? 65));
-  const complexity = Math.max(0, Math.min(100, candidate.complexityScore ?? 45));
-  const momentum = Math.round(skillMatch * 0.45 + trendScore * 0.4 + (100 - complexity) * 0.15);
+  const trustedHostBonuses = {
+    'reddit.com': 6,
+    'x.com': 8,
+    'twitter.com': 8,
+    'dev.to': 4,
+    'github.com': 2,
+  };
+  skillMatch += trustedHostBonuses[host] || 0;
+  skillMatch = clamp(skillMatch);
+
+  let trendScore = clamp(candidate.trendScore ?? candidate.engagementScore ?? 65);
+  if (candidate.sourceType === 'twitter') trendScore = clamp(trendScore + 5);
+  if (candidate.sourceType === 'reddit') trendScore = clamp(trendScore + 3);
+
+  const complexity = clamp(candidate.complexityScore ?? 45);
+  const momentum = Math.round(skillMatch * 0.5 + trendScore * 0.35 + (100 - complexity) * 0.15);
 
   const deployAgents = candidate.deployAgents || inferAgents(hay);
+  const qualityScore = clamp(momentum + (description.length >= 140 ? 6 : 0) + (deployAgents.length >= 2 ? 4 : 0) - (hay.includes('awesome') ? 15 : 0));
 
   return {
     id: candidate.id || slugify(`${title}-${candidate.sourceLabel || candidate.url || Date.now()}`),
@@ -135,8 +183,34 @@ function scoreCandidate(candidate) {
       deployTasks: Math.max(2, Math.min(4, deployAgents.length || 3)),
       ingestedBy: 'intelligence-ingest-script',
       rawSource: candidate.rawSource || null,
+      host,
+      qualityScore,
     },
   };
+}
+
+function shouldKeepCandidate(row) {
+  const text = `${row.title} ${row.description} ${row.source_label}`.toLowerCase();
+  if (!row.title || row.title.length < 12) return false;
+  if (!row.description || row.description.length < 90) return false;
+  if (row.skill_match_score < 58) return false;
+  if (row.momentum_score < 64) return false;
+  if ((row.metadata?.qualityScore || 0) < 66) return false;
+  if (text.includes('awesome ') || text.includes('collection') || text.includes('directory')) return false;
+  if (text.includes('casino') || text.includes('crypto') || text.includes('adult')) return false;
+  return true;
+}
+
+function dedupeRows(rows) {
+  const seen = new Map();
+  for (const row of rows) {
+    const key = slugify(`${row.title}-${row.source_label}`);
+    const existing = seen.get(key);
+    if (!existing || (row.metadata?.qualityScore || 0) > (existing.metadata?.qualityScore || 0)) {
+      seen.set(key, row);
+    }
+  }
+  return Array.from(seen.values());
 }
 
 function inferAgents(hay) {
@@ -225,10 +299,19 @@ async function fetchCandidates() {
 async function main() {
   requireEnv();
   const candidates = await fetchCandidates();
-  const rows = candidates.map(scoreCandidate);
-  const uniqueRows = Array.from(new Map(rows.map((row) => [row.id, row])).values());
-  const result = await supabaseUpsert(uniqueRows);
-  console.log(`Upserted ${uniqueRows.length} intelligence items.`);
+  const scoredRows = candidates.map(scoreCandidate);
+  const curatedRows = dedupeRows(scoredRows)
+    .filter(shouldKeepCandidate)
+    .sort((a, b) => {
+      const q = (b.metadata?.qualityScore || 0) - (a.metadata?.qualityScore || 0);
+      if (q !== 0) return q;
+      return b.momentum_score - a.momentum_score;
+    })
+    .slice(0, 10);
+
+  const result = await supabaseUpsert(curatedRows);
+  console.log(`Fetched ${candidates.length} candidates.`);
+  console.log(`Curated ${curatedRows.length} intelligence items.`);
   if (result?.length) {
     console.log(result.map((row) => `- ${row.id}`).join('\n'));
   }
