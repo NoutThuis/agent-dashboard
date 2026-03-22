@@ -1757,7 +1757,7 @@
                     <button class="tab-btn" data-tab="settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
                     <button class="tab-btn" data-tab="intelligence"><span style="font-size:16px;line-height:1;">🧠</span>Intelligence</button>
                     <button class="tab-btn" data-tab="docudigest"><span style="font-size:16px;line-height:1;">📑</span>DocuDigest</button>
-                    <button class="tab-btn" data-tab="agents"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agents</button>
+                    <button class="tab-btn" data-tab="teams"><span style="font-size:16px;line-height:1;">👥</span>Teams</button>
                     <button class="tab-btn" data-tab="crons"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Cron Jobs</button>
                 </div>
             </nav>
@@ -1988,9 +1988,9 @@
                     <div class="dd-toast" id="ddToast"></div>
                 </div>
 
-                <div id="panel-agents" class="tab-panel">
-                    <!-- Agents tab — populated by JS -->
-                    <div id="agents-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
+                <div id="panel-teams" class="tab-panel">
+                    <!-- Teams tab — populated by JS -->
+                    <div id="teams-container" style="max-width:1400px;margin:0 auto;padding:0 48px 40px;"></div>
                 </div>
 
                 <div id="panel-crons" class="tab-panel">
@@ -3069,7 +3069,7 @@
 
             const pageTitleEl = document.getElementById('pageTitle');
             const pageTitleIconEl = document.getElementById('pageTitleIcon');
-            const tabTitles = { dashboard: 'Dashboard', content: 'Content', tasks: 'Tasks', settings: 'Settings', intelligence: 'Intelligence', docudigest: 'DocuDigest', agents: 'Agents', crons: 'Cron Jobs' };
+            const tabTitles = { dashboard: 'Dashboard', content: 'Content', tasks: 'Tasks', settings: 'Settings', intelligence: 'Intelligence', docudigest: 'DocuDigest', teams: 'Teams', crons: 'Cron Jobs' };
             const tabIcons = {
                 dashboard: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
                 content: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
@@ -3077,7 +3077,7 @@
                 settings: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
                 intelligence: '<span style="font-size:22px;line-height:1;">🧠</span>',
                 docudigest: '<span style="font-size:22px;line-height:1;">📑</span>',
-                agents: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+                teams: '<span style="font-size:22px;line-height:1;">👥</span>',
                 crons: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
             };
 
@@ -3101,8 +3101,8 @@
                 if (tabName === 'dashboard') {
                     loadDashboardTab();
                 }
-                if (tabName === 'agents') {
-                    loadAgentsTab();
+                if (tabName === 'teams') {
+                    loadTeamsTab();
                 }
                 if (tabName === 'tasks') {
                     loadTasksTab();
@@ -3147,12 +3147,39 @@
         }
 
         // ── Agent Definitions ───────────────────────────
-        const AGENTS = [
-            { name: 'Mira', emoji: '🎨', role: 'Frontend Designer', glow: '#3B82F6' },
-            { name: 'Ari',  emoji: '🏗️', role: 'Frontend Architect', glow: '#7C3AED' },
-            { name: 'Noah', emoji: '⚡', role: 'Frontend Builder', glow: '#F59E0B' },
-            { name: 'Lena', emoji: '🔍', role: 'Frontend Reviewer', glow: '#10B981' },
+        // ── Team Configuration ───────────────────────
+        // To add a new team, add an entry to this array and it will automatically appear on the overview page
+        const TEAMS = [
+            {
+                id: 'frontend',
+                name: 'Frontend Team',
+                icon: '🎨',
+                color: '#06B6D4',
+                subtitle: 'UI/UX Design & Development',
+                agents: [
+                    { name: 'Mira', emoji: '🎨', role: 'Frontend Designer', color: '#3B82F6', description: 'Designs UI components, visual direction, and brand consistency' },
+                    { name: 'Ari',  emoji: '🏗️', role: 'Frontend Architect', color: '#7C3AED', description: 'Defines system architecture and component patterns' },
+                    { name: 'Noah', emoji: '⚡', role: 'Frontend Builder', color: '#F59E0B', description: 'Builds production-ready frontend components and pages' },
+                    { name: 'Lena', emoji: '🔍', role: 'Frontend Reviewer', color: '#10B981', description: 'Reviews code quality, accessibility, and best practices' },
+                ]
+            },
+            {
+                id: 'physics',
+                name: 'Physics Team',
+                icon: '⚛️',
+                color: '#7C3AED',
+                subtitle: 'Research, Tutoring & Simulation',
+                // TODO: Connect physics team to agent_logs
+                agents: [
+                    { name: 'Felix', emoji: '🔬', role: 'Physics Tutor', color: '#14B8A6', description: 'Explains physics concepts, walks through problem-solving' },
+                    { name: 'Iris',  emoji: '📚', role: 'Research Scout', color: '#6366F1', description: 'Finds and summarizes relevant research papers' },
+                    { name: 'Max',   emoji: '💻', role: 'Simulation Engineer', color: '#F43F5E', description: 'Builds physics simulations and calculations' },
+                ]
+            }
         ];
+
+        // Flat list of all agents across all teams (backwards compat)
+        const AGENTS = TEAMS.flatMap(t => t.agents.map(a => ({ ...a, glow: a.color, teamId: t.id })));
 
         // ── Helpers ─────────────────────────────────────
         function todayStart() {
@@ -3212,23 +3239,34 @@
         }
 
         // ── Skeleton Loading ────────────────────────────
-        function renderSkeleton() {
+        // ── Teams Tab Skeleton ────────────────────────
+        function teamsOverviewSkeleton() {
             return `
-                <div style="display:flex;gap:16px;margin-bottom:24px;" class="agent-card-stagger">
-                    ${[1,2,3,4].map(() => `<div class="skeleton-pulse" style="flex:1;height:80px;"></div>`).join('')}
+                <div class="skeleton-pulse" style="height:160px;border-radius:20px;margin-bottom:32px;"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;">
+                    <div class="skeleton-pulse" style="height:220px;border-radius:20px;"></div>
+                    <div class="skeleton-pulse" style="height:220px;border-radius:20px;"></div>
                 </div>
-                <div style="display:flex;gap:16px;margin-bottom:24px;" class="agent-card-stagger">
-                    ${[1,2,3,4].map(() => `<div class="skeleton-pulse" style="flex:1;height:220px;"></div>`).join('')}
+                <div class="skeleton-pulse" style="height:300px;border-radius:20px;"></div>
+            `;
+        }
+
+        function teamsDetailSkeleton() {
+            return `
+                <div style="display:flex;gap:16px;margin-bottom:24px;">
+                    ${[1,2,3,4].map(() => `<div class="skeleton-pulse" style="flex:1;height:80px;border-radius:16px;"></div>`).join('')}
+                </div>
+                <div style="display:flex;gap:16px;margin-bottom:24px;">
+                    ${[1,2,3,4].map(() => `<div class="skeleton-pulse" style="flex:1;height:220px;border-radius:20px;"></div>`).join('')}
                 </div>
                 <div style="display:flex;gap:16px;">
-                    <div class="skeleton-pulse" style="flex:0.65;height:320px;"></div>
-                    <div class="skeleton-pulse" style="flex:0.35;height:320px;"></div>
+                    <div class="skeleton-pulse" style="flex:0.65;height:320px;border-radius:20px;"></div>
+                    <div class="skeleton-pulse" style="flex:0.35;height:320px;border-radius:20px;"></div>
                 </div>
             `;
         }
 
-        // ── Error Banner ────────────────────────────────
-        function renderError() {
+        function teamsError() {
             return `
                 <div class="error-banner">
                     <div style="display:flex;align-items:center;gap:10px;">
@@ -3237,39 +3275,223 @@
                         </svg>
                         <span style="color:rgba(248,113,113,0.9);font-size:14px;font-weight:500;">Unable to connect to database</span>
                     </div>
-                    <button onclick="loadAgentsTab()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:6px 14px;color:#F87171;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Retry</button>
+                    <button onclick="loadTeamsTab()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:6px 14px;color:#F87171;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Retry</button>
                 </div>
             `;
         }
 
-        // ── Render Functions ────────────────────────────
-        function renderStatsRow(logs) {
+        // ── Teams Tab: Helper to get team for an agent ─
+        function getTeamForAgent(agentName) {
+            const n = (agentName || '').toLowerCase();
+            return TEAMS.find(t => t.agents.some(a => a.name.toLowerCase() === n));
+        }
+
+        // ── Teams Tab: Overview Rendering ────────────────
+        let _teamsCurrentView = 'overview'; // 'overview' or team id
+        let _teamsLogs = [];
+
+        function renderJarvisCard(logs) {
             const todayStr = todayStart();
-            const weekStr = weekStart();
             const todayLogs = logs.filter(l => new Date(l.created_at) >= new Date(todayStr));
-            const weekLogs = logs.filter(l => new Date(l.created_at) >= new Date(weekStr));
-
-            const totalToday = todayLogs.length;
-            const totalWeek = weekLogs.length;
-
-            // Most active agent this week
-            const agentCounts = {};
-            weekLogs.forEach(l => { agentCounts[l.agent_name] = (agentCounts[l.agent_name] || 0) + 1; });
-            const mostActive = Object.entries(agentCounts).sort((a, b) => b[1] - a[1])[0];
-            const mostActiveName = mostActive ? mostActive[0] : 'N/A';
-
-            // Success rate this week
-            const completedWeek = weekLogs.filter(l => (l.status || '').toLowerCase() === 'completed').length;
-            const successRate = totalWeek > 0 ? Math.round((completedWeek / totalWeek) * 100) : 0;
-
-            const stats = [
-                { label: 'Tasks Today', value: totalToday, color: '#06B6D4' },
-                { label: 'Tasks This Week', value: totalWeek, color: '#7C3AED' },
-                { label: 'Most Active Agent', value: mostActiveName, color: '#EC4899' },
-                { label: 'Success Rate', value: totalWeek > 0 ? successRate + '%' : 'N/A', color: '#10B981' },
-            ];
+            const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const activeAgents = new Set();
+            logs.forEach(l => { if (new Date(l.created_at) >= new Date(yesterday)) activeAgents.add(l.agent_name); });
+            const totalAgents = TEAMS.reduce((s, t) => s + t.agents.length, 0);
 
             return `
+                <div class="glass-card" style="padding:32px 36px;margin-bottom:32px;position:relative;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 60px rgba(124,58,237,0.15),0 0 60px rgba(236,72,153,0.1);">
+                    <div style="position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,rgba(124,58,237,0.06) 0%,rgba(236,72,153,0.04) 100%);pointer-events:none;"></div>
+                    <div style="position:absolute;inset:-1px;border-radius:21px;background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(236,72,153,0.15),transparent 60%);-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:1px;pointer-events:none;"></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;">
+                        <div style="display:flex;align-items:center;gap:20px;">
+                            <div style="width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(236,72,153,0.15));display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid rgba(255,255,255,0.08);">🤖</div>
+                            <div>
+                                <div style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.95);">Jarvis</div>
+                                <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.4);">Main Orchestrator</div>
+                                <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:4px;">Controls and coordinates all agent teams</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:32px;">
+                            <div style="text-align:center;">
+                                <div style="display:flex;align-items:center;gap:6px;justify-content:center;margin-bottom:4px;">
+                                    <div style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 8px rgba(52,211,153,0.5);animation:mc-pulse 2.5s ease-in-out infinite;"></div>
+                                    <span style="font-size:12px;font-weight:600;color:#34D399;">Online</span>
+                                </div>
+                                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Status</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.9);">${TEAMS.length}</div>
+                                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Teams</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.9);">${totalAgents}</div>
+                                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Agents</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:24px;">
+                            <div style="text-align:center;">
+                                <div style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.9);">${todayLogs.length}</div>
+                                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Tasks today</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.9);">${activeAgents.size}</div>
+                                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Active (24h)</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
+                                    <div style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 6px rgba(52,211,153,0.4);"></div>
+                                    <span style="font-size:13px;font-weight:600;color:#34D399;">Healthy</span>
+                                </div>
+                                <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">System</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // TODO: Connect Jarvis status to real orchestrator data
+        }
+
+        function renderTeamCards(logs) {
+            const todayStr = todayStart();
+            const weekStr = weekStart();
+            const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+            return `
+                <div style="display:grid;grid-template-columns:repeat(${TEAMS.length},1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
+                    ${TEAMS.map(team => {
+                        const teamAgentNames = team.agents.map(a => a.name.toLowerCase());
+                        const teamLogs = logs.filter(l => teamAgentNames.includes((l.agent_name || '').toLowerCase()));
+                        const todayTeamLogs = teamLogs.filter(l => new Date(l.created_at) >= new Date(todayStr));
+                        const weekTeamLogs = teamLogs.filter(l => new Date(l.created_at) >= new Date(weekStr));
+                        const completedWeek = weekTeamLogs.filter(l => (l.status || '').toLowerCase() === 'completed').length;
+                        const successRate = weekTeamLogs.length > 0 ? Math.round((completedWeek / weekTeamLogs.length) * 100) : 0;
+
+                        // Most active this week
+                        const counts = {};
+                        weekTeamLogs.forEach(l => { counts[l.agent_name] = (counts[l.agent_name] || 0) + 1; });
+                        const mostActive = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+
+                        // Active in last 24h?
+                        const hasRecent = teamLogs.some(l => new Date(l.created_at) >= new Date(yesterday));
+                        const statusColor = hasRecent ? '#34D399' : '#FBBF24';
+                        const statusLabel = hasRecent ? 'Active' : 'Idle';
+
+                        const hasData = teamLogs.length > 0;
+
+                        return `
+                            <div class="glass-card" onclick="showTeamDetail('${team.id}')" style="padding:28px;cursor:pointer;transition:all 200ms ease;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(team.color, 0.18)};border-top:2px solid ${hexToRgba(team.color, 0.35)};" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.1),inset 0 1px 0 0 rgba(255,255,255,0.1),0 0 50px ${hexToRgba(team.color, 0.25)}'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(team.color, 0.18)}'">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                                    <div style="display:flex;align-items:center;gap:12px;">
+                                        <span style="font-size:28px;">${team.icon}</span>
+                                        <div>
+                                            <div style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.95);">${team.name}</div>
+                                            <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.4);">${team.subtitle}</div>
+                                        </div>
+                                    </div>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                </div>
+
+                                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:14px;">${team.agents.length} Agents</div>
+
+                                <!-- Agent avatar row -->
+                                <div style="display:flex;gap:8px;margin-bottom:18px;">
+                                    ${team.agents.map(a => `
+                                        <div style="width:34px;height:34px;border-radius:50%;background:${hexToRgba(a.color, 0.15)};border:1px solid ${hexToRgba(a.color, 0.3)};display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px ${hexToRgba(a.color, 0.2)};" title="${a.name} — ${a.role}">${a.emoji}</div>
+                                    `).join('')}
+                                </div>
+
+                                <!-- Quick stats -->
+                                <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:12px;color:rgba(255,255,255,0.4);">Tasks today</span>
+                                        <span style="font-size:13px;font-weight:600;color:${team.color};">${hasData ? todayTeamLogs.length : 'N/A'}</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:12px;color:rgba(255,255,255,0.4);">Success rate</span>
+                                        <span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);">${hasData && weekTeamLogs.length > 0 ? successRate + '%' : 'N/A'}</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:12px;color:rgba(255,255,255,0.4);">Most active</span>
+                                        <span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);">${mostActive ? mostActive[0] : 'N/A'}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Status -->
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <div style="width:6px;height:6px;border-radius:50%;background:${statusColor};box-shadow:0 0 6px ${hexToRgba(statusColor, 0.5)};"></div>
+                                    <span style="font-size:12px;font-weight:500;color:${statusColor};">${statusLabel}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function renderCrossTeamActivity(logs) {
+            const recent = logs.slice(0, 10);
+            const rows = recent.map(log => {
+                const team = getTeamForAgent(log.agent_name);
+                const teamBadgeColor = team ? team.color : '#6B7280';
+                const teamName = team ? team.name.replace(' Team', '') : '?';
+                const color = agentColor(log.agent_name);
+                const sc = statusColor(log.status);
+                return `
+                    <div class="activity-row" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-left:2px solid ${hexToRgba(color, 0.3)};border-radius:0 8px 8px 0;">
+                        <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:${hexToRgba(teamBadgeColor, 0.12)};color:${teamBadgeColor};flex-shrink:0;">${teamName}</span>
+                        <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;box-shadow:0 0 8px ${hexToRgba(color, 0.4)};"></div>
+                        <span style="font-size:12px;font-weight:600;color:${color};min-width:40px;">${log.agent_name || 'Unknown'}</span>
+                        <span style="font-size:12px;color:rgba(255,255,255,0.7);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${truncate(log.task_description || '', 55)}</span>
+                        <span style="font-size:11px;color:rgba(255,255,255,0.35);min-width:72px;flex-shrink:0;">${relativeTime(log.created_at)}</span>
+                        <span style="font-size:11px;font-weight:500;color:${sc.text};background:${sc.bg};padding:3px 10px;border-radius:6px;flex-shrink:0;">${log.status || 'unknown'}</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="glass-card" style="padding:0;overflow:hidden;">
+                    <div style="padding:18px 24px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.8);">Recent Activity Across Teams</span>
+                        <span style="font-size:11px;padding:2px 10px;border-radius:6px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);">${recent.length} entries</span>
+                    </div>
+                    <div class="activity-feed-scroll" style="padding:8px 12px;max-height:360px;">
+                        ${rows.length > 0 ? rows : '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">No cross-team activity yet</div>'}
+                    </div>
+                    ${rows.length > 0 ? '<div style="height:24px;background:linear-gradient(transparent, rgba(10,15,30,0.6));pointer-events:none;"></div>' : ''}
+                </div>
+            `;
+        }
+
+        // ── Teams Tab: Detail View ──────────────────────
+        function renderTeamDetailView(teamId, logs) {
+            const team = TEAMS.find(t => t.id === teamId);
+            if (!team) return '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">Team not found</div>';
+
+            const teamAgentNames = team.agents.map(a => a.name.toLowerCase());
+            const teamLogs = logs.filter(l => teamAgentNames.includes((l.agent_name || '').toLowerCase()));
+            const todayStr = todayStart();
+            const weekStr = weekStart();
+            const todayLogs = teamLogs.filter(l => new Date(l.created_at) >= new Date(todayStr));
+            const weekLogs = teamLogs.filter(l => new Date(l.created_at) >= new Date(weekStr));
+
+            const completedWeek = weekLogs.filter(l => (l.status || '').toLowerCase() === 'completed').length;
+            const successRate = weekLogs.length > 0 ? Math.round((completedWeek / weekLogs.length) * 100) : 0;
+
+            const counts = {};
+            weekLogs.forEach(l => { counts[l.agent_name] = (counts[l.agent_name] || 0) + 1; });
+            const mostActive = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+
+            const hasData = teamLogs.length > 0;
+
+            // Stats row
+            const stats = [
+                { label: 'Tasks Today', value: hasData ? todayLogs.length : 'N/A', color: team.color },
+                { label: 'Tasks This Week', value: hasData ? weekLogs.length : 'N/A', color: '#7C3AED' },
+                { label: 'Most Active Agent', value: mostActive ? mostActive[0] : 'N/A', color: '#EC4899' },
+                { label: 'Success Rate', value: hasData && weekLogs.length > 0 ? successRate + '%' : 'N/A', color: '#10B981' },
+            ];
+
+            const statsRow = `
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
                     ${stats.map(s => `
                         <div class="glass-card" style="padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 40px ${hexToRgba(s.color, 0.18)};">
@@ -3279,20 +3501,17 @@
                     `).join('')}
                 </div>
             `;
-        }
 
-        function renderAgentCards(logs) {
-            const todayStr = todayStart();
-
-            return `
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
-                    ${AGENTS.map(agent => {
-                        const agentLogs = logs.filter(l => (l.agent_name || '').toLowerCase() === agent.name.toLowerCase());
-                        const todayLogs = agentLogs.filter(l => new Date(l.created_at) >= new Date(todayStr));
-                        const latest = agentLogs[0] || null; // already sorted desc
+            // Agent cards
+            const agentCards = `
+                <div style="display:grid;grid-template-columns:repeat(${Math.min(team.agents.length, 4)},1fr);gap:24px;margin-bottom:32px;" class="agent-card-stagger">
+                    ${team.agents.map(agent => {
+                        const agentLogs = teamLogs.filter(l => (l.agent_name || '').toLowerCase() === agent.name.toLowerCase());
+                        const agentToday = agentLogs.filter(l => new Date(l.created_at) >= new Date(todayStr));
+                        const latest = agentLogs[0] || null;
 
                         return `
-                            <div class="glass-card" style="padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px ${hexToRgba(agent.glow, 0.22)};border-top:2px solid ${hexToRgba(agent.glow, 0.35)};">
+                            <div class="glass-card" style="padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px ${hexToRgba(agent.color, 0.22)};border-top:2px solid ${hexToRgba(agent.color, 0.35)};">
                                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
                                     <span style="font-size:28px;">${agent.emoji}</span>
                                     <div>
@@ -3322,7 +3541,7 @@
                                     </div>
                                     <div style="display:flex;align-items:center;justify-content:space-between;">
                                         <span style="font-size:12px;color:rgba(255,255,255,0.4);">Tasks today</span>
-                                        <span style="font-size:13px;font-weight:600;color:${agent.glow};">${todayLogs.length}</span>
+                                        <span style="font-size:13px;font-weight:600;color:${agent.color};">${agentToday.length}</span>
                                     </div>
                                 </div>
                             </div>
@@ -3330,14 +3549,10 @@
                     }).join('')}
                 </div>
             `;
-        }
 
-        function renderBottomRow(logs) {
-            const todayStr = todayStart();
-            const recent = logs.slice(0, 50);
-
-            // Activity Feed
-            const feedRows = recent.map(log => {
+            // Bottom row: Activity Feed + Model Usage
+            const recentTeamLogs = teamLogs.slice(0, 20);
+            const feedRows = recentTeamLogs.map(log => {
                 const color = agentColor(log.agent_name);
                 const sc = statusColor(log.status);
                 return `
@@ -3352,11 +3567,8 @@
                 `;
             }).join('');
 
-            // Model Usage Tracker
-            const todayLogs = logs.filter(l => new Date(l.created_at) >= new Date(todayStr));
-            const modelRows = AGENTS.map(agent => {
+            const modelRows = team.agents.map(agent => {
                 const agentToday = todayLogs.filter(l => (l.agent_name || '').toLowerCase() === agent.name.toLowerCase());
-                // Most used model today
                 const modelCounts = {};
                 agentToday.forEach(l => { if (l.model_used) modelCounts[l.model_used] = (modelCounts[l.model_used] || 0) + 1; });
                 const topModel = Object.entries(modelCounts).sort((a, b) => b[1] - a[1])[0];
@@ -3364,7 +3576,7 @@
                     <tr>
                         <td style="padding:10px 14px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);">
                             <span style="display:inline-flex;align-items:center;gap:8px;">
-                                <span style="width:8px;height:8px;border-radius:50%;background:${agent.glow};display:inline-block;"></span>
+                                <span style="width:8px;height:8px;border-radius:50%;background:${agent.color};display:inline-block;"></span>
                                 ${agent.name}
                             </span>
                         </td>
@@ -3374,21 +3586,18 @@
                 `;
             }).join('');
 
-            return `
+            const bottomRow = `
                 <div style="display:flex;gap:24px;" class="agent-card-stagger">
-                    <!-- Activity Feed -->
                     <div class="glass-card" style="flex:0.65;padding:0;overflow:hidden;">
                         <div style="padding:18px 24px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
                             <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.8);">Recent Activity</span>
-                            <span style="font-size:11px;color:rgba(255,255,255,0.3);">${recent.length} entries</span>
+                            <span style="font-size:11px;color:rgba(255,255,255,0.3);">${recentTeamLogs.length} entries</span>
                         </div>
-                        <div class="activity-feed-scroll" style="padding:8px 12px;">
+                        <div class="activity-feed-scroll" style="padding:8px 12px;max-height:380px;">
                             ${feedRows.length > 0 ? feedRows : '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">No activity yet</div>'}
                         </div>
-                        <div style="position:sticky;bottom:0;height:32px;background:linear-gradient(transparent, rgba(10,15,30,0.6));pointer-events:none;"></div>
+                        ${feedRows.length > 0 ? '<div style="height:24px;background:linear-gradient(transparent, rgba(10,15,30,0.6));pointer-events:none;"></div>' : ''}
                     </div>
-
-                    <!-- Model Usage -->
                     <div class="glass-card" style="flex:0.35;padding:0;overflow:hidden;">
                         <div style="padding:18px 24px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">
                             <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.8);">Model Usage</span>
@@ -3402,15 +3611,128 @@
                                         <th style="padding:10px 14px;font-size:11px;font-weight:500;color:rgba(255,255,255,0.3);text-align:right;text-transform:uppercase;letter-spacing:0.05em;">Tasks</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    ${modelRows}
-                                </tbody>
+                                <tbody>${modelRows}</tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             `;
+
+            // Back button + header
+            const header = `
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
+                    <button onclick="showTeamsOverview()" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px 14px;color:rgba(255,255,255,0.7);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 150ms;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        Back to Teams
+                    </button>
+                    <span style="font-size:24px;">${team.icon}</span>
+                    <div>
+                        <div style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.95);">${team.name}</div>
+                        <div style="font-size:13px;color:rgba(255,255,255,0.4);">${team.subtitle}</div>
+                    </div>
+                </div>
+            `;
+
+            return header + statsRow + agentCards + bottomRow;
         }
+
+        // ── Teams Tab: Navigation ───────────────────────
+        function showTeamDetail(teamId) {
+            _teamsCurrentView = teamId;
+            const container = document.getElementById('teams-container');
+            if (!container) return;
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.innerHTML = renderTeamDetailView(teamId, _teamsLogs);
+                // Inject refresh into title bar
+                const actionsEl = document.getElementById('pageTitleActions');
+                if (actionsEl) {
+                    actionsEl.innerHTML = `
+                        <button class="refresh-btn" id="teamsRefreshBtn" onclick="refreshTeams()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    `;
+                }
+                container.style.opacity = '1';
+            }, 200);
+        }
+        window.showTeamDetail = showTeamDetail;
+
+        function showTeamsOverview() {
+            _teamsCurrentView = 'overview';
+            const container = document.getElementById('teams-container');
+            if (!container) return;
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.innerHTML = renderJarvisCard(_teamsLogs) + renderTeamCards(_teamsLogs) + renderCrossTeamActivity(_teamsLogs);
+                container.style.opacity = '1';
+            }, 200);
+        }
+        window.showTeamsOverview = showTeamsOverview;
+
+        // ── Teams Tab: Main Loader ──────────────────────
+        async function loadTeamsTab() {
+            const container = document.getElementById('teams-container');
+            if (!container) return;
+            container.style.transition = 'opacity 200ms ease';
+            container.innerHTML = _teamsCurrentView === 'overview' ? teamsOverviewSkeleton() : teamsDetailSkeleton();
+
+            try {
+                const sb = getSupabase();
+                if (!sb) throw new Error('Supabase SDK not loaded');
+                const { data, error } = await sb
+                    .from('agent_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(500);
+
+                if (error) throw error;
+                _teamsLogs = data || [];
+
+                // Inject refresh button
+                const actionsEl = document.getElementById('pageTitleActions');
+                if (actionsEl) {
+                    actionsEl.innerHTML = `
+                        <button class="refresh-btn" id="teamsRefreshBtn" onclick="refreshTeams()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    `;
+                }
+
+                if (_teamsCurrentView === 'overview') {
+                    container.innerHTML = renderJarvisCard(_teamsLogs) + renderTeamCards(_teamsLogs) + renderCrossTeamActivity(_teamsLogs);
+                } else {
+                    container.innerHTML = renderTeamDetailView(_teamsCurrentView, _teamsLogs);
+                }
+            } catch (err) {
+                console.error('Teams tab: Supabase fetch failed:', err);
+                // Still render the overview with empty data so physics team shows gracefully
+                _teamsLogs = [];
+                if (_teamsCurrentView === 'overview') {
+                    container.innerHTML = teamsError() + renderJarvisCard([]) + renderTeamCards([]) + renderCrossTeamActivity([]);
+                } else {
+                    container.innerHTML = teamsError() + renderTeamDetailView(_teamsCurrentView, []);
+                }
+            }
+        }
+
+        async function refreshTeams() {
+            const btn = document.getElementById('teamsRefreshBtn');
+            if (btn) {
+                btn.classList.add('spinning');
+                setTimeout(() => btn.classList.remove('spinning'), 500);
+            }
+            await loadTeamsTab();
+        }
+        window.refreshTeams = refreshTeams;
+
+        // Tab switching is initialized at the top of the script block.
 
         // ── Dashboard Tab ────────────────────────────────
         function dashboardSkeleton() {
@@ -3516,7 +3838,7 @@
                         ${tasksError ? '<div style="font-size:11px;color:#F87171;margin-top:6px;">Unable to load — <span onclick="loadDashboardTab()" style="cursor:pointer;text-decoration:underline;">Retry</span></div>' : ''}
                     </div>
                     <div class="glass-card" style="padding:24px;border-top:2px solid rgba(124,58,237,0.35);box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.08),inset 0 1px 0 0 rgba(255,255,255,0.08),0 0 35px rgba(124,58,237,0.22);">
-                        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:4px;">${recentAgents} <span style="font-size:16px;font-weight:400;color:rgba(255,255,255,0.35);">/ 4</span></div>
+                        <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:4px;">${recentAgents} <span style="font-size:16px;font-weight:400;color:rgba(255,255,255,0.35);">/ ${AGENTS.length}</span></div>
                         <div style="font-size:12px;color:rgba(255,255,255,0.4);">agents active today</div>
                         ${logsError ? '<div style="font-size:11px;color:#F87171;margin-top:6px;">Unable to load — <span onclick="loadDashboardTab()" style="cursor:pointer;text-decoration:underline;">Retry</span></div>' : ''}
                     </div>
@@ -3763,62 +4085,9 @@
             }
         }
 
-        // ── Main Data Loader ────────────────────────────
-        async function loadAgentsTab() {
-            const container = document.getElementById('agents-container');
-            container.innerHTML = renderSkeleton();
-
-            try {
-                const sb = getSupabase();
-                if (!sb) throw new Error('Supabase SDK not loaded');
-                const { data, error } = await sb
-                    .from('agent_logs')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(500);
-
-                if (error) throw error;
-
-                const logs = data || [];
-
-                // Inject refresh button into the page title bar actions area
-                const actionsEl = document.getElementById('pageTitleActions');
-                if (actionsEl) {
-                    actionsEl.innerHTML = `
-                        <button class="refresh-btn" id="agentsRefreshBtn" onclick="refreshAgents()">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                            </svg>
-                            Refresh
-                        </button>
-                    `;
-                }
-
-                container.innerHTML = `
-                    ${renderStatsRow(logs)}
-                    ${renderAgentCards(logs)}
-                    ${renderBottomRow(logs)}
-                `;
-            } catch (err) {
-                console.error('Supabase fetch failed:', err);
-                container.innerHTML = renderError() + renderSkeleton();
-            }
-        }
-
-        async function refreshAgents() {
-            const btn = document.getElementById('agentsRefreshBtn');
-            if (btn) {
-                btn.classList.add('spinning');
-                setTimeout(() => btn.classList.remove('spinning'), 500);
-            }
-            await loadAgentsTab();
-        }
-
-        // Tab switching is initialized at the top of the script block.
-
         // ── Tasks Tab ───────────────────────────────────
-        const AGENT_COLORS = { Jarvis: '#06B6D4', Mira: '#3B82F6', Ari: '#7C3AED', Noah: '#F59E0B', Lena: '#10B981', Manual: '#FFFFFF' };
-        const AGENT_ROLES = { Jarvis: 'AI Assistant', Mira: 'Frontend Designer', Ari: 'Frontend Architect', Noah: 'Frontend Builder', Lena: 'Frontend Reviewer', Manual: 'User' };
+        const AGENT_COLORS = { Jarvis: '#06B6D4', Mira: '#3B82F6', Ari: '#7C3AED', Noah: '#F59E0B', Lena: '#10B981', Felix: '#14B8A6', Iris: '#6366F1', Max: '#F43F5E', Manual: '#FFFFFF' };
+        const AGENT_ROLES = { Jarvis: 'AI Assistant', Mira: 'Frontend Designer', Ari: 'Frontend Architect', Noah: 'Frontend Builder', Lena: 'Frontend Reviewer', Felix: 'Physics Tutor', Iris: 'Research Scout', Max: 'Simulation Engineer', Manual: 'User' };
         const CAT_COLORS = { Design: '#EC4899', Architecture: '#7C3AED', Development: '#10B981', Review: '#06B6D4' };
         const PRI_COLORS = { Urgent: '#EF4444', High: '#F97316', Normal: '#3B82F6', Low: '#6B7280' };
         const TRACK_COLORS = { 'On Track': '#10B981', 'At Risk': '#F59E0B', 'Off Track': '#EF4444' };
