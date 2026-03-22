@@ -539,6 +539,11 @@
             animation: mc-pulse-amber 2.5s ease-in-out infinite;
         }
 
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
         @keyframes mc-pulse {
             0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(52, 211, 153, 0.5); }
             50% { opacity: 0.6; box-shadow: 0 0 14px rgba(52, 211, 153, 0.7); }
@@ -4088,7 +4093,7 @@
         // ── Tasks Tab ───────────────────────────────────
         const AGENT_COLORS = { Jarvis: '#06B6D4', Mira: '#3B82F6', Ari: '#7C3AED', Noah: '#F59E0B', Lena: '#10B981', Felix: '#14B8A6', Iris: '#6366F1', Max: '#F43F5E', Manual: '#FFFFFF' };
         const AGENT_ROLES = { Jarvis: 'AI Assistant', Mira: 'Frontend Designer', Ari: 'Frontend Architect', Noah: 'Frontend Builder', Lena: 'Frontend Reviewer', Felix: 'Physics Tutor', Iris: 'Research Scout', Max: 'Simulation Engineer', Manual: 'User' };
-        const CAT_COLORS = { Design: '#EC4899', Architecture: '#7C3AED', Development: '#10B981', Review: '#06B6D4' };
+        const CAT_COLORS = { Physics: '#8B5CF6', Research: '#6366F1', Code: '#10B981', General: '#06B6D4' };
         const PRI_COLORS = { Urgent: '#EF4444', High: '#F97316', Normal: '#3B82F6', Low: '#6B7280' };
         const TRACK_COLORS = { 'On Track': '#10B981', 'At Risk': '#F59E0B', 'Off Track': '#EF4444' };
         const TASK_STATUS_META = {
@@ -4103,14 +4108,7 @@
         let tasksPriorityFilter = 'All';
         let activeTaskDetailId = null;
 
-        const SEED_TASKS = [
-            { title: 'Design hero section layout', agent_name: 'Mira', role: 'Frontend Designer', category: 'Design', priority: 'High', track_status: 'On Track', status: 'todo', completed: false },
-            { title: 'Define component architecture for dashboard', agent_name: 'Ari', role: 'Frontend Architect', category: 'Architecture', priority: 'Urgent', track_status: 'At Risk', status: 'todo', completed: false },
-            { title: 'Build navigation component', agent_name: 'Noah', role: 'Frontend Builder', category: 'Development', priority: 'Normal', track_status: 'On Track', status: 'in_progress', completed: false },
-            { title: 'Review landing page accessibility', agent_name: 'Lena', role: 'Frontend Reviewer', category: 'Review', priority: 'High', track_status: 'At Risk', status: 'in_progress', completed: false },
-            { title: 'Implement responsive grid system', agent_name: 'Noah', role: 'Frontend Builder', category: 'Development', priority: 'Normal', track_status: 'On Track', status: 'done', completed: true },
-            { title: 'Design color system tokens', agent_name: 'Mira', role: 'Frontend Designer', category: 'Design', priority: 'Low', track_status: 'On Track', status: 'done', completed: true },
-        ];
+        const SEED_TASKS = []; // No simulated tasks — board starts empty
 
         function tasksSkeletonHTML() {
             const cols = ['To Do', 'Doing', 'Done'];
@@ -4356,11 +4354,19 @@
                                 </div>
                             </div>
 
-                            <!-- Description placeholder -->
+                            <!-- Description -->
                             <div class="task-detail-section">
                                 <div class="task-detail-section-title">Description</div>
-                                <div style="font-size:14px;line-height:1.7;color:rgba(255,255,255,0.65);">${output ? escapeHTML(output) : '<span style="color:rgba(255,255,255,0.3);">No description or output recorded.</span>'}</div>
+                                <div style="font-size:14px;line-height:1.7;color:rgba(255,255,255,0.65);">${task.task_description ? escapeHTML(task.task_description) : '<span style="color:rgba(255,255,255,0.3);">No description provided.</span>'}</div>
                             </div>
+
+                            ${output ? `
+                            <!-- AI Output -->
+                            <div class="task-detail-section">
+                                <div class="task-detail-section-title">🤖 Output</div>
+                                <div class="task-detail-inner-box" style="font-size:13px;line-height:1.8;color:rgba(255,255,255,0.75);white-space:pre-wrap;max-height:400px;overflow-y:auto;">${escapeHTML(output)}</div>
+                            </div>
+                            ` : ''}
 
                             <!-- Status pills row -->
                             <div style="display:flex;flex-wrap:wrap;gap:8px;">
@@ -4399,6 +4405,7 @@
                         </div>
 
                         <div class="task-detail-action-row">
+                            ${task.status !== 'done' && task.agent_name !== 'Manual' ? `<button class="task-detail-action-btn" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.25);color:#34D399;" onclick="runTask('${task.id}')">▶ Run</button>` : ''}
                             <button class="task-detail-action-btn" onclick="closeTaskDetail();openEditModal('${task.id}')">Edit</button>
                             <button class="task-detail-action-btn danger" onclick="closeTaskDetail();deleteTask('${task.id}')">Delete</button>
                         </div>
@@ -4414,6 +4421,7 @@
             const trackColor = TRACK_COLORS[task.track_status] || '#6B7280';
             const isChecked = task.status === 'done';
             const dueStr = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+            const isRunning = !!task._running;
 
             return `
                 <div class="kanban-card" draggable="true" data-task-id="${task.id}"
@@ -4421,15 +4429,16 @@
                      onmouseup="taskCardMouseUp(event, '${task.id}')"
                      ondragstart="onTaskDragStart(event, '${task.id}')"
                      ondragend="onTaskDragEnd(event)"
-                     style="cursor:pointer;">
+                     style="cursor:pointer;${isRunning ? 'border-color:rgba(245,158,11,0.4);box-shadow:0 0 20px rgba(245,158,11,0.15);' : ''}">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
                         <div style="display:flex;align-items:center;gap:8px;">
-                            <div style="width:8px;height:8px;border-radius:50%;background:${agentColor};box-shadow:0 0 6px ${hexToRgba(agentColor, 0.5)};"></div>
-                            <span style="font-size:12px;font-weight:600;color:${agentColor};">${task.agent_name}</span>
+                            ${isRunning ? '<div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;animation:pulse 1.5s ease-in-out infinite;"></div>' : `<div style="width:8px;height:8px;border-radius:50%;background:${agentColor};box-shadow:0 0 6px ${hexToRgba(agentColor, 0.5)};"></div>`}
+                            <span style="font-size:12px;font-weight:600;color:${isRunning ? '#F59E0B' : agentColor};">${task.agent_name}${isRunning ? ' — running…' : ''}</span>
                         </div>
                         <div style="position:relative;">
                             <button class="kanban-menu-btn" onclick="toggleTaskMenu(event, '${task.id}')">⋯</button>
                             <div class="kanban-dropdown" id="task-menu-${task.id}" style="display:none;">
+                                ${task.status !== 'done' && task.agent_name !== 'Manual' ? `<button class="kanban-dropdown-item" onclick="runTask('${task.id}')" style="color:#34D399;">▶ Run</button>` : ''}
                                 <button class="kanban-dropdown-item" onclick="openEditModal('${task.id}')">Edit</button>
                                 <button class="kanban-dropdown-item danger" onclick="deleteTask('${task.id}')">Delete</button>
                             </div>
@@ -4453,21 +4462,21 @@
             return `
                 <div class="kanban-inline-form" id="add-form-${status}">
                     <input class="kanban-form-input" id="add-title-${status}" placeholder="Task title" />
+                    <textarea class="kanban-form-input" id="add-desc-${status}" placeholder="Description / instructions (optional)" rows="2" style="resize:vertical;min-height:38px;"></textarea>
                     <select class="kanban-form-select" id="add-agent-${status}">
                         <option value="" disabled selected>Agent</option>
-                        <option value="Mira">Mira</option>
-                        <option value="Ari">Ari</option>
-                        <option value="Noah">Noah</option>
-                        <option value="Lena">Lena</option>
                         <option value="Jarvis">Jarvis</option>
+                        <option value="Felix">Felix</option>
+                        <option value="Iris">Iris</option>
+                        <option value="Max">Max</option>
                         <option value="Manual">Manual</option>
                     </select>
                     <select class="kanban-form-select" id="add-category-${status}">
                         <option value="" disabled selected>Category</option>
-                        <option>Design</option>
-                        <option>Architecture</option>
-                        <option>Development</option>
-                        <option>Review</option>
+                        <option>Physics</option>
+                        <option>Research</option>
+                        <option>Code</option>
+                        <option>General</option>
                     </select>
                     <select class="kanban-form-select" id="add-priority-${status}">
                         <option value="" disabled selected>Priority</option>
@@ -4566,10 +4575,10 @@
                 <div class="tasks-filter-bar">
                     <select class="tasks-filter-select" id="tasks-cat-filter" onchange="tasksCategoryFilter=this.value;renderTasksContent();">
                         <option value="All" ${tasksCategoryFilter === 'All' ? 'selected' : ''}>All Categories</option>
-                        <option value="Design" ${tasksCategoryFilter === 'Design' ? 'selected' : ''}>Design</option>
-                        <option value="Architecture" ${tasksCategoryFilter === 'Architecture' ? 'selected' : ''}>Architecture</option>
-                        <option value="Development" ${tasksCategoryFilter === 'Development' ? 'selected' : ''}>Development</option>
-                        <option value="Review" ${tasksCategoryFilter === 'Review' ? 'selected' : ''}>Review</option>
+                        <option value="Physics" ${tasksCategoryFilter === 'Physics' ? 'selected' : ''}>Physics</option>
+                        <option value="Research" ${tasksCategoryFilter === 'Research' ? 'selected' : ''}>Research</option>
+                        <option value="Code" ${tasksCategoryFilter === 'Code' ? 'selected' : ''}>Code</option>
+                        <option value="General" ${tasksCategoryFilter === 'General' ? 'selected' : ''}>General</option>
                     </select>
                     <select class="tasks-filter-select" id="tasks-pri-filter" onchange="tasksPriorityFilter=this.value;renderTasksContent();">
                         <option value="All" ${tasksPriorityFilter === 'All' ? 'selected' : ''}>All Priorities</option>
@@ -4641,17 +4650,9 @@
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
-                    const { data: seeded, error: seedErr } = await sb.from('agent_tasks').insert(SEED_TASKS).select();
-                    if (seedErr) {
-                        const msg = seedErr.message || '';
-                        if (msg.toLowerCase().includes('row-level security')) {
-                            tasksData = [];
-                            container.innerHTML = tasksErrorHTML('Tasks table is empty and Supabase RLS blocked automatic seeding.') + renderTasksEmptyState('The tab itself works now, but your current policies do not allow inserting seed tasks from the browser. Create an insert policy for authenticated users on `agent_tasks`, or seed the rows once from the Supabase dashboard/SQL editor.');
-                            return;
-                        }
-                        throw seedErr;
-                    }
-                    data = seeded || [];
+                    tasksData = [];
+                    renderTasksContent();
+                    return;
                 }
 
                 tasksData = data;
@@ -4793,6 +4794,7 @@
 
         async function saveNewTask(status) {
             const title = document.getElementById(`add-title-${status}`)?.value?.trim();
+            const desc = document.getElementById(`add-desc-${status}`)?.value?.trim() || null;
             const agent = document.getElementById(`add-agent-${status}`)?.value;
             const category = document.getElementById(`add-category-${status}`)?.value;
             const priority = document.getElementById(`add-priority-${status}`)?.value;
@@ -4803,6 +4805,7 @@
 
             const newTask = {
                 title,
+                task_description: desc,
                 agent_name: agent,
                 role: AGENT_ROLES[agent] || 'User',
                 category,
@@ -4836,8 +4839,8 @@
             overlay.id = 'task-edit-overlay';
             overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
-            const agentOptions = ['Jarvis', 'Mira', 'Ari', 'Noah', 'Lena', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
-            const catOptions = ['Design', 'Architecture', 'Development', 'Review'].map(c => `<option value="${c}" ${task.category === c ? 'selected' : ''}>${c}</option>`).join('');
+            const agentOptions = ['Jarvis', 'Felix', 'Iris', 'Max', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
+            const catOptions = ['Physics', 'Research', 'Code', 'General'].map(c => `<option value="${c}" ${task.category === c ? 'selected' : ''}>${c}</option>`).join('');
             const priOptions = ['Urgent', 'High', 'Normal', 'Low'].map(p => `<option value="${p}" ${task.priority === p ? 'selected' : ''}>${p}</option>`).join('');
             const trackOptions = ['On Track', 'At Risk', 'Off Track'].map(t2 => `<option value="${t2}" ${task.track_status === t2 ? 'selected' : ''}>${t2}</option>`).join('');
 
@@ -4845,7 +4848,8 @@
                 <div class="task-modal">
                     <h3>Edit Task</h3>
                     <div style="display:flex;flex-direction:column;gap:12px;">
-                        <input class="kanban-form-input" id="edit-title" value="${task.title}" placeholder="Title" />
+                        <input class="kanban-form-input" id="edit-title" value="${escapeHTML(task.title)}" placeholder="Title" />
+                        <textarea class="kanban-form-input" id="edit-desc" placeholder="Description / instructions (optional)" rows="3" style="resize:vertical;min-height:38px;">${escapeHTML(task.task_description || '')}</textarea>
                         <select class="kanban-form-select" id="edit-agent">${agentOptions}</select>
                         <select class="kanban-form-select" id="edit-category">${catOptions}</select>
                         <select class="kanban-form-select" id="edit-priority">${priOptions}</select>
@@ -4864,6 +4868,7 @@
 
         async function saveEditTask(taskId) {
             const title = document.getElementById('edit-title')?.value?.trim();
+            const desc = document.getElementById('edit-desc')?.value?.trim() || null;
             const agent = document.getElementById('edit-agent')?.value;
             const category = document.getElementById('edit-category')?.value;
             const priority = document.getElementById('edit-priority')?.value;
@@ -4874,6 +4879,7 @@
 
             const updates = {
                 title,
+                task_description: desc,
                 agent_name: agent,
                 role: AGENT_ROLES[agent] || 'User',
                 category,
@@ -4899,6 +4905,116 @@
                 renderTasksContent();
                 console.error('Failed to edit task:', err);
                 alert('Could not save task edits to Supabase. The board was reverted.');
+            }
+        }
+
+        // ── Run Task via Gateway ─────────────────────────
+        const TASK_GATEWAY_URL = 'https://nouts-mac-mini.taild6c2b0.ts.net/v1/chat/completions';
+
+        function getTaskSystemPrompt(agentName) {
+            const prompts = {
+                Jarvis: 'You are Jarvis, a sharp and resourceful AI assistant. Complete the task thoroughly and concisely.',
+                Felix: 'You are Felix, a physics tutor. Solve the problem step by step with clear reasoning, dimensional analysis, and physical intuition.',
+                Iris: 'You are Iris, a research scout. Find, summarize, and analyze relevant scientific literature. Be thorough but concise.',
+                Max: 'You are Max, a computational physics lab assistant. Write clean, well-commented Python code using NumPy, SciPy, Matplotlib, or SymPy as needed.',
+            };
+            return prompts[agentName] || prompts.Jarvis;
+        }
+
+        async function runTask(taskId) {
+            closeTaskMenus();
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task) return;
+            if (task._running) return; // prevent double-run
+
+            const token = localStorage.getItem('gateway_token');
+            if (!token) {
+                alert('Set your gateway token in Settings first.');
+                return;
+            }
+
+            // Move to in_progress optimistically
+            const previous = { status: task.status, completed: task.completed, output: task.output, error_message: task.error_message };
+            task.status = 'in_progress';
+            task.completed = false;
+            task._running = true;
+            closeTaskDetail();
+            renderTasksContent();
+
+            // Persist status change
+            try {
+                const sb = getSupabase();
+                await sb.from('agent_tasks').update({ status: 'in_progress', completed: false }).eq('id', taskId);
+            } catch (e) { console.warn('Could not persist in_progress:', e); }
+
+            // Call gateway
+            try {
+                const model = task.model_used || 'anthropic/claude-opus-4-6';
+                const systemPrompt = getTaskSystemPrompt(task.agent_name);
+                const userMessage = task.title + (task.task_description ? '\n\n' + task.task_description : '');
+
+                const res = await fetch(TASK_GATEWAY_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token,
+                    },
+                    body: JSON.stringify({
+                        model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userMessage },
+                        ],
+                        max_tokens: 4096,
+                    }),
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => res.statusText);
+                    throw new Error(`Gateway ${res.status}: ${errText}`);
+                }
+
+                const data = await res.json();
+                const output = data.choices?.[0]?.message?.content || 'No response from model.';
+
+                // Update task with result
+                task.status = 'done';
+                task.completed = true;
+                task.output = output;
+                task.error_message = null;
+                task.model_used = model;
+                task._running = false;
+                renderTasksContent();
+
+                // Persist to Supabase
+                try {
+                    const sb = getSupabase();
+                    await sb.from('agent_tasks').update({
+                        status: 'done',
+                        completed: true,
+                        output,
+                        error_message: null,
+                        model_used: model,
+                    }).eq('id', taskId);
+                } catch (e) { console.warn('Could not persist task result:', e); }
+
+            } catch (err) {
+                console.error('Task execution failed:', err);
+                task.status = 'todo';
+                task.completed = false;
+                task.error_message = err.message || 'Execution failed';
+                task._running = false;
+                renderTasksContent();
+
+                // Persist error
+                try {
+                    const sb = getSupabase();
+                    await sb.from('agent_tasks').update({
+                        status: 'todo',
+                        completed: false,
+                        error_message: task.error_message,
+                    }).eq('id', taskId);
+                } catch (e) { console.warn('Could not persist error:', e); }
             }
         }
 
