@@ -2663,7 +2663,8 @@
             } catch (err) {
                 console.error('Failed to deploy intelligence use case:', err);
                 closeIntelDeployModal();
-                showIntelToast('Could not deploy to Tasks — check Supabase/RLS');
+                const msg = err?.message || err?.details || 'Unknown error';
+                showIntelToast(`Deploy failed: ${msg}`);
             }
         }
 
