@@ -2144,6 +2144,7 @@
                 title: 'Automated UI Component Library Generator',
                 sourceType: 'twitter',
                 sourceLabel: '@designengineer',
+                sourceUrl: 'https://x.com/designengineer',
                 sourceBadge: 'Found on Twitter/X via @designengineer',
                 momentum: 94,
                 skillMatch: 96,
@@ -2165,6 +2166,7 @@
                 title: 'Landing Page A/B Test Pipeline',
                 sourceType: 'reddit',
                 sourceLabel: 'Reddit r/SaaS',
+                sourceUrl: 'https://reddit.com/r/SaaS',
                 sourceBadge: 'Found on Reddit r/SaaS',
                 momentum: 87,
                 skillMatch: 88,
@@ -2186,6 +2188,7 @@
                 title: 'Client Dashboard Template Factory',
                 sourceType: 'twitter',
                 sourceLabel: '@indiehacker',
+                sourceUrl: 'https://x.com/indiehacker',
                 sourceBadge: 'Found on Twitter/X via @indiehacker',
                 momentum: 81,
                 skillMatch: 90,
@@ -2207,6 +2210,7 @@
                 title: 'Automated SEO Content Optimizer',
                 sourceType: 'twitter',
                 sourceLabel: '@growthhacker',
+                sourceUrl: 'https://x.com/growthhacker',
                 sourceBadge: 'Found on Twitter/X via @growthhacker',
                 momentum: 68,
                 skillMatch: 52,
@@ -2228,6 +2232,7 @@
                 title: 'Design System Documentation Generator',
                 sourceType: 'devto',
                 sourceLabel: 'Dev.to article',
+                sourceUrl: 'https://dev.to',
                 sourceBadge: 'Found via Dev.to article',
                 momentum: 76,
                 skillMatch: 85,
@@ -2249,6 +2254,7 @@
                 title: 'Micro-SaaS Frontend Cloner',
                 sourceType: 'twitter',
                 sourceLabel: '@buildinpublic',
+                sourceUrl: 'https://x.com/buildinpublic',
                 sourceBadge: 'Found on Twitter/X via @buildinpublic',
                 momentum: 72,
                 skillMatch: 79,
@@ -2273,6 +2279,7 @@
                 title: 'Agent Handoff Console',
                 sourceType: 'twitter',
                 sourceLabel: '@opsbuilder',
+                sourceUrl: 'https://x.com/opsbuilder',
                 sourceBadge: 'Found on Twitter/X via @opsbuilder',
                 momentum: 83,
                 skillMatch: 91,
@@ -2295,6 +2302,7 @@
                 title: 'Research Brief Generator for New Topics',
                 sourceType: 'reddit',
                 sourceLabel: 'Reddit r/LocalLLaMA',
+                sourceUrl: 'https://reddit.com/r/LocalLLaMA',
                 sourceBadge: 'Found on Reddit r/LocalLLaMA',
                 momentum: 79,
                 skillMatch: 87,
@@ -2337,6 +2345,7 @@
                 sourceType: row.source_type || meta.sourceType || 'twitter',
                 sourceLabel: row.source_label || meta.sourceLabel || 'Unknown source',
                 sourceBadge: row.source_badge || meta.sourceBadge || `Found via ${row.source_label || 'source'}`,
+                sourceUrl: row.source_url || meta.sourceUrl || null,
                 momentum: row.momentum_score ?? 0,
                 skillMatch: row.skill_match_score ?? 0,
                 skillNote: row.skill_match_note || '',
@@ -2362,6 +2371,7 @@
                 source_type: item.sourceType,
                 source_label: item.sourceLabel,
                 source_badge: item.sourceBadge,
+                source_url: item.sourceUrl || null,
                 momentum_score: item.momentum,
                 skill_match_score: item.skillMatch,
                 skill_match_note: item.skillNote,
@@ -2595,6 +2605,7 @@
                 return plans[item.id].map((task, index) => ({
                     ...defaults,
                     ...task,
+                    task_description: (item.description || '') + (item.sourceUrl ? `\n\nSource: ${item.sourceUrl}` : ''),
                     role: AGENT_ROLES[task.agent_name] || 'User',
                     metadata: {
                         source: 'intelligence-tab',
@@ -2602,6 +2613,7 @@
                         use_case_title: item.title,
                         deploy_index: index + 1,
                         source_label: item.sourceLabel,
+                        source_url: item.sourceUrl || null,
                         momentum: item.momentum,
                     }
                 }));
@@ -2623,7 +2635,7 @@
             return agents.map((agentName, index) => ({
                 ...defaults,
                 title: `${agentToVerb[agentName] || 'Work on'} — ${item.title}`,
-                task_description: item.description || null,
+                task_description: (item.description || '') + (item.sourceUrl ? `\n\nSource: ${item.sourceUrl}` : ''),
                 agent_name: agentName,
                 role: AGENT_ROLES[agentName] || 'User',
                 category: agentToCategory[agentName] || 'General',
@@ -2633,6 +2645,7 @@
                     use_case_title: item.title,
                     deploy_index: index + 1,
                     source_label: item.sourceLabel,
+                    source_url: item.sourceUrl || null,
                     momentum: item.momentum,
                 }
             }));
@@ -2834,7 +2847,10 @@
                                 <div>
                                     <div style="font-size:30px;font-weight:700;color:rgba(255,255,255,0.96);line-height:1.2;margin-bottom:10px;">${selected.title}</div>
                                     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
-                                        <span class="kanban-pill" style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.72);">${selected.sourceBadge}</span>
+                                        ${selected.sourceUrl
+                                            ? `<a href="${selected.sourceUrl}" target="_blank" rel="noopener" class="kanban-pill" style="background:rgba(255,255,255,0.07);color:rgba(96,165,250,0.9);text-decoration:none;cursor:pointer;" title="Open source">${selected.sourceBadge} ↗</a>`
+                                            : `<span class="kanban-pill" style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.72);">${selected.sourceBadge}</span>`
+                                        }
                                         <span style="font-size:12px;color:rgba(255,255,255,0.35);">Discovered ${intelligenceRelativeTime(selected.discoveredAt)}</span>
                                     </div>
                                 </div>
