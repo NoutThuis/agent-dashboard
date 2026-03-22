@@ -4093,7 +4093,7 @@
         // ── Tasks Tab ───────────────────────────────────
         const AGENT_COLORS = { Jarvis: '#06B6D4', Mira: '#3B82F6', Ari: '#7C3AED', Noah: '#F59E0B', Lena: '#10B981', Felix: '#14B8A6', Iris: '#6366F1', Max: '#F43F5E', Manual: '#FFFFFF' };
         const AGENT_ROLES = { Jarvis: 'AI Assistant', Mira: 'Frontend Designer', Ari: 'Frontend Architect', Noah: 'Frontend Builder', Lena: 'Frontend Reviewer', Felix: 'Physics Tutor', Iris: 'Research Scout', Max: 'Simulation Engineer', Manual: 'User' };
-        const CAT_COLORS = { Physics: '#8B5CF6', Research: '#6366F1', Code: '#10B981', General: '#06B6D4' };
+        const CAT_COLORS = { Design: '#EC4899', Architecture: '#7C3AED', Development: '#10B981', Review: '#06B6D4', Physics: '#8B5CF6', Research: '#6366F1', Code: '#F59E0B', General: '#6B7280' };
         const PRI_COLORS = { Urgent: '#EF4444', High: '#F97316', Normal: '#3B82F6', Low: '#6B7280' };
         const TRACK_COLORS = { 'On Track': '#10B981', 'At Risk': '#F59E0B', 'Off Track': '#EF4444' };
         const TASK_STATUS_META = {
@@ -4469,10 +4469,18 @@
                         <option value="Felix">Felix</option>
                         <option value="Iris">Iris</option>
                         <option value="Max">Max</option>
+                        <option value="Mira">Mira</option>
+                        <option value="Ari">Ari</option>
+                        <option value="Noah">Noah</option>
+                        <option value="Lena">Lena</option>
                         <option value="Manual">Manual</option>
                     </select>
                     <select class="kanban-form-select" id="add-category-${status}">
                         <option value="" disabled selected>Category</option>
+                        <option>Design</option>
+                        <option>Architecture</option>
+                        <option>Development</option>
+                        <option>Review</option>
                         <option>Physics</option>
                         <option>Research</option>
                         <option>Code</option>
@@ -4575,6 +4583,10 @@
                 <div class="tasks-filter-bar">
                     <select class="tasks-filter-select" id="tasks-cat-filter" onchange="tasksCategoryFilter=this.value;renderTasksContent();">
                         <option value="All" ${tasksCategoryFilter === 'All' ? 'selected' : ''}>All Categories</option>
+                        <option value="Design" ${tasksCategoryFilter === 'Design' ? 'selected' : ''}>Design</option>
+                        <option value="Architecture" ${tasksCategoryFilter === 'Architecture' ? 'selected' : ''}>Architecture</option>
+                        <option value="Development" ${tasksCategoryFilter === 'Development' ? 'selected' : ''}>Development</option>
+                        <option value="Review" ${tasksCategoryFilter === 'Review' ? 'selected' : ''}>Review</option>
                         <option value="Physics" ${tasksCategoryFilter === 'Physics' ? 'selected' : ''}>Physics</option>
                         <option value="Research" ${tasksCategoryFilter === 'Research' ? 'selected' : ''}>Research</option>
                         <option value="Code" ${tasksCategoryFilter === 'Code' ? 'selected' : ''}>Code</option>
@@ -4839,8 +4851,8 @@
             overlay.id = 'task-edit-overlay';
             overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
-            const agentOptions = ['Jarvis', 'Felix', 'Iris', 'Max', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
-            const catOptions = ['Physics', 'Research', 'Code', 'General'].map(c => `<option value="${c}" ${task.category === c ? 'selected' : ''}>${c}</option>`).join('');
+            const agentOptions = ['Jarvis', 'Felix', 'Iris', 'Max', 'Mira', 'Ari', 'Noah', 'Lena', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
+            const catOptions = ['Design', 'Architecture', 'Development', 'Review', 'Physics', 'Research', 'Code', 'General'].map(c => `<option value="${c}" ${task.category === c ? 'selected' : ''}>${c}</option>`).join('');
             const priOptions = ['Urgent', 'High', 'Normal', 'Low'].map(p => `<option value="${p}" ${task.priority === p ? 'selected' : ''}>${p}</option>`).join('');
             const trackOptions = ['On Track', 'At Risk', 'Off Track'].map(t2 => `<option value="${t2}" ${task.track_status === t2 ? 'selected' : ''}>${t2}</option>`).join('');
 
@@ -4917,6 +4929,10 @@
                 Felix: 'You are Felix, a physics tutor. Solve the problem step by step with clear reasoning, dimensional analysis, and physical intuition.',
                 Iris: 'You are Iris, a research scout. Find, summarize, and analyze relevant scientific literature. Be thorough but concise.',
                 Max: 'You are Max, a computational physics lab assistant. Write clean, well-commented Python code using NumPy, SciPy, Matplotlib, or SymPy as needed.',
+                Mira: 'You are Mira, a frontend designer. Create distinctive, polished visual designs with clear design direction and rationale.',
+                Ari: 'You are Ari, a frontend architect. Define component architecture, data flow, and technical structure for frontend projects.',
+                Noah: 'You are Noah, a frontend builder. Write clean, production-grade HTML/CSS/JS and React components.',
+                Lena: 'You are Lena, a frontend reviewer. Review code and designs for quality, accessibility, performance, and best practices.',
             };
             return prompts[agentName] || prompts.Jarvis;
         }
