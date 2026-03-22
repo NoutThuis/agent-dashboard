@@ -2556,6 +2556,7 @@
                 priority: item.momentum >= 90 ? 'Urgent' : item.momentum >= 80 ? 'High' : 'Normal',
             };
 
+            // Hardcoded plans for seed use cases
             const plans = {
                 'ui-library-generator': [
                     { title: `Design component direction — ${item.title}`, agent_name: 'Mira', category: 'Design' },
@@ -2589,10 +2590,43 @@
                 ],
             };
 
-            return (plans[item.id] || []).map((task, index) => ({
+            // If there's a hardcoded plan, use it
+            if (plans[item.id]) {
+                return plans[item.id].map((task, index) => ({
+                    ...defaults,
+                    ...task,
+                    role: AGENT_ROLES[task.agent_name] || 'User',
+                    metadata: {
+                        source: 'intelligence-tab',
+                        use_case_id: item.id,
+                        use_case_title: item.title,
+                        deploy_index: index + 1,
+                        source_label: item.sourceLabel,
+                        momentum: item.momentum,
+                    }
+                }));
+            }
+
+            // Dynamic fallback: generate one task per deploy agent
+            const agentToCategory = {
+                Mira: 'Design', Ari: 'Architecture', Noah: 'Development', Lena: 'Review',
+                Felix: 'Physics', Iris: 'Research', Max: 'Code', Jarvis: 'General', Manual: 'General',
+            };
+            const agentToVerb = {
+                Mira: 'Design', Ari: 'Architect', Noah: 'Build', Lena: 'Review',
+                Felix: 'Solve', Iris: 'Research', Max: 'Implement', Jarvis: 'Execute', Manual: 'Handle',
+            };
+            const agents = Array.isArray(item.deployAgents) && item.deployAgents.length
+                ? item.deployAgents
+                : ['Jarvis'];
+
+            return agents.map((agentName, index) => ({
                 ...defaults,
-                ...task,
-                role: AGENT_ROLES[task.agent_name] || 'User',
+                title: `${agentToVerb[agentName] || 'Work on'} — ${item.title}`,
+                task_description: item.description || null,
+                agent_name: agentName,
+                role: AGENT_ROLES[agentName] || 'User',
+                category: agentToCategory[agentName] || 'General',
                 metadata: {
                     source: 'intelligence-tab',
                     use_case_id: item.id,
