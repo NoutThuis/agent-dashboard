@@ -4458,6 +4458,7 @@
             const isChecked = task.status === 'done';
             const dueStr = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
             const isRunning = !!task._running;
+            const pipeInfo = getPipelineInfo(task);
 
             return `
                 <div class="kanban-card" draggable="true" data-task-id="${task.id}"
@@ -4465,11 +4466,12 @@
                      onmouseup="taskCardMouseUp(event, '${task.id}')"
                      ondragstart="onTaskDragStart(event, '${task.id}')"
                      ondragend="onTaskDragEnd(event)"
-                     style="cursor:pointer;${isRunning ? 'border-color:rgba(245,158,11,0.4);box-shadow:0 0 20px rgba(245,158,11,0.15);' : ''}">
+                     style="cursor:pointer;${isRunning ? 'border-color:rgba(245,158,11,0.4);box-shadow:0 0 20px rgba(245,158,11,0.15);' : ''}${pipeInfo ? 'border-left:2px solid rgba(96,165,250,0.4);' : ''}">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
                         <div style="display:flex;align-items:center;gap:8px;">
                             ${isRunning ? '<div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;animation:pulse 1.5s ease-in-out infinite;"></div>' : `<div style="width:8px;height:8px;border-radius:50%;background:${agentColor};box-shadow:0 0 6px ${hexToRgba(agentColor, 0.5)};"></div>`}
                             <span style="font-size:12px;font-weight:600;color:${isRunning ? '#F59E0B' : agentColor};">${task.agent_name}${isRunning ? ' — running…' : ''}</span>
+                            ${pipeInfo ? `<span style="font-size:10px;font-weight:600;color:#60A5FA;background:rgba(96,165,250,0.12);padding:1px 6px;border-radius:4px;">⛓ ${pipeInfo.step}/${pipeInfo.total}</span>` : ''}
                         </div>
                         <div style="position:relative;">
                             <button class="kanban-menu-btn" onclick="toggleTaskMenu(event, '${task.id}')">⋯</button>
@@ -4987,6 +4989,17 @@
                 return;
             }
 
+            // Warn if running out of sequence (only for manual single runs, not pipeline calls)
+            if (!priorContext) {
+                const pipeInfo = getPipelineInfo(task);
+                if (pipeInfo && pipeInfo.hasPendingPredecessors) {
+                    const names = pipeInfo.predecessorNames.join(', ');
+                    if (!confirm(`⚠️ This is step ${pipeInfo.step}/${pipeInfo.total} in a pipeline.\n\n${names} still need${pipeInfo.predecessorNames.length === 1 ? 's' : ''} to run first. Running this alone means ${task.agent_name} won't have their output as context.\n\nRun anyway?`)) {
+                        return;
+                    }
+                }
+            }
+
             const previous = { status: task.status, completed: task.completed, output: task.output, error_message: task.error_message };
             task.status = 'in_progress';
             task.completed = false;
@@ -5160,6 +5173,21 @@
 
         function hasPipeline(task) {
             return getRelatedTasks(task).length > 1;
+        }
+
+        // Get pipeline position info for display
+        function getPipelineInfo(task) {
+            const related = getRelatedTasks(task);
+            if (related.length <= 1) return null;
+            const ordered = sortPipelineTasks(related);
+            const index = ordered.findIndex(t => t.id === task.id);
+            const hasPendingPredecessors = ordered.slice(0, index).some(t => t.status !== 'done');
+            return {
+                step: index + 1,
+                total: ordered.length,
+                hasPendingPredecessors,
+                predecessorNames: ordered.slice(0, index).filter(t => t.status !== 'done').map(t => t.agent_name),
+            };
         }
 
         // ── Delete Task ─────────────────────────────────
