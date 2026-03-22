@@ -4999,7 +4999,7 @@
             if (!task) return;
             if (task._running) return;
 
-            const token = localStorage.getItem('gateway_token');
+            const token = localStorage.getItem('dd_gateway_token') || localStorage.getItem('gateway_token');
             if (!token) {
                 alert('Set your gateway token in Settings first.');
                 return;
@@ -5142,7 +5142,7 @@
             const task = tasksData.find(t => t.id === taskId);
             if (!task) return;
 
-            const token = localStorage.getItem('gateway_token');
+            const token = localStorage.getItem('dd_gateway_token') || localStorage.getItem('gateway_token');
             if (!token) {
                 alert('Set your gateway token in Settings first.');
                 return;
