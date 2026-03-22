@@ -4441,6 +4441,7 @@
 
                         <div class="task-detail-action-row">
                             ${task.status !== 'done' && task.agent_name !== 'Manual' ? `<button class="task-detail-action-btn" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.25);color:#34D399;" onclick="runTask('${task.id}')">▶ Run</button>` : ''}
+                            ${task.status !== 'done' && task.agent_name !== 'Manual' && hasPipeline(task) ? `<button class="task-detail-action-btn" style="background:rgba(96,165,250,0.15);border-color:rgba(96,165,250,0.25);color:#60A5FA;" onclick="runPipeline('${task.id}')">▶▶ Run Pipeline</button>` : ''}
                             <button class="task-detail-action-btn" onclick="closeTaskDetail();openEditModal('${task.id}')">Edit</button>
                             <button class="task-detail-action-btn danger" onclick="closeTaskDetail();deleteTask('${task.id}')">Delete</button>
                         </div>
@@ -4474,6 +4475,7 @@
                             <button class="kanban-menu-btn" onclick="toggleTaskMenu(event, '${task.id}')">⋯</button>
                             <div class="kanban-dropdown" id="task-menu-${task.id}" style="display:none;">
                                 ${task.status !== 'done' && task.agent_name !== 'Manual' ? `<button class="kanban-dropdown-item" onclick="runTask('${task.id}')" style="color:#34D399;">▶ Run</button>` : ''}
+                                ${task.status !== 'done' && task.agent_name !== 'Manual' && hasPipeline(task) ? `<button class="kanban-dropdown-item" onclick="runPipeline('${task.id}')" style="color:#60A5FA;">▶▶ Run Pipeline</button>` : ''}
                                 <button class="kanban-dropdown-item" onclick="openEditModal('${task.id}')">Edit</button>
                                 <button class="kanban-dropdown-item danger" onclick="deleteTask('${task.id}')">Delete</button>
                             </div>
@@ -4972,11 +4974,12 @@
             return prompts[agentName] || prompts.Jarvis;
         }
 
-        async function runTask(taskId) {
+        // Run a single task, optionally with prior context from previous pipeline steps
+        async function runTask(taskId, priorContext = null) {
             closeTaskMenus();
             const task = tasksData.find(t => t.id === taskId);
             if (!task) return;
-            if (task._running) return; // prevent double-run
+            if (task._running) return;
 
             const token = localStorage.getItem('gateway_token');
             if (!token) {
@@ -4984,7 +4987,6 @@
                 return;
             }
 
-            // Move to in_progress optimistically
             const previous = { status: task.status, completed: task.completed, output: task.output, error_message: task.error_message };
             task.status = 'in_progress';
             task.completed = false;
@@ -4992,17 +4994,20 @@
             closeTaskDetail();
             renderTasksContent();
 
-            // Persist status change
             try {
                 const sb = getSupabase();
                 await sb.from('agent_tasks').update({ status: 'in_progress', completed: false }).eq('id', taskId);
             } catch (e) { console.warn('Could not persist in_progress:', e); }
 
-            // Call gateway
             try {
                 const model = task.model_used || 'anthropic/claude-opus-4-6';
                 const systemPrompt = getTaskSystemPrompt(task.agent_name);
-                const userMessage = task.title + (task.task_description ? '\n\n' + task.task_description : '');
+                let userMessage = task.title + (task.task_description ? '\n\n' + task.task_description : '');
+
+                // Inject prior pipeline context
+                if (priorContext) {
+                    userMessage += '\n\n---\n## Prior work from earlier pipeline steps:\n' + priorContext;
+                }
 
                 const res = await fetch(TASK_GATEWAY_URL, {
                     method: 'POST',
@@ -5028,7 +5033,6 @@
                 const data = await res.json();
                 const output = data.choices?.[0]?.message?.content || 'No response from model.';
 
-                // Update task with result
                 task.status = 'done';
                 task.completed = true;
                 task.output = output;
@@ -5037,17 +5041,14 @@
                 task._running = false;
                 renderTasksContent();
 
-                // Persist to Supabase
                 try {
                     const sb = getSupabase();
                     await sb.from('agent_tasks').update({
-                        status: 'done',
-                        completed: true,
-                        output,
-                        error_message: null,
-                        model_used: model,
+                        status: 'done', completed: true, output, error_message: null, model_used: model,
                     }).eq('id', taskId);
                 } catch (e) { console.warn('Could not persist task result:', e); }
+
+                return output; // return for pipeline chaining
 
             } catch (err) {
                 console.error('Task execution failed:', err);
@@ -5057,16 +5058,108 @@
                 task._running = false;
                 renderTasksContent();
 
-                // Persist error
                 try {
                     const sb = getSupabase();
                     await sb.from('agent_tasks').update({
-                        status: 'todo',
-                        completed: false,
-                        error_message: task.error_message,
+                        status: 'todo', completed: false, error_message: task.error_message,
                     }).eq('id', taskId);
                 } catch (e) { console.warn('Could not persist error:', e); }
+
+                throw err; // re-throw so pipeline stops
             }
+        }
+
+        // ── Pipeline Execution ──────────────────────────
+        // Execution order by category — lower number runs first
+        const PIPELINE_ORDER = {
+            'Architecture': 1, 'Design': 2, 'Research': 2, 'Physics': 2,
+            'Development': 3, 'Code': 3, 'Review': 4, 'General': 3,
+        };
+
+        function getRelatedTasks(task) {
+            // Group by use_case_id from metadata, or by matching title suffix
+            const meta = typeof task.metadata === 'string' ? (() => { try { return JSON.parse(task.metadata); } catch { return null; } })() : task.metadata;
+            const useCaseId = meta?.use_case_id;
+
+            if (useCaseId) {
+                return tasksData.filter(t => {
+                    const m = typeof t.metadata === 'string' ? (() => { try { return JSON.parse(t.metadata); } catch { return null; } })() : t.metadata;
+                    return m?.use_case_id === useCaseId;
+                });
+            }
+            return [task]; // standalone task, no pipeline
+        }
+
+        function sortPipelineTasks(tasks) {
+            return [...tasks].sort((a, b) => {
+                const orderA = PIPELINE_ORDER[a.category] ?? 99;
+                const orderB = PIPELINE_ORDER[b.category] ?? 99;
+                if (orderA !== orderB) return orderA - orderB;
+                // Secondary sort by deploy_index if available
+                const metaA = typeof a.metadata === 'object' ? a.metadata : {};
+                const metaB = typeof b.metadata === 'object' ? b.metadata : {};
+                return (metaA.deploy_index || 0) - (metaB.deploy_index || 0);
+            });
+        }
+
+        let _pipelineRunning = false;
+
+        async function runPipeline(taskId) {
+            if (_pipelineRunning) {
+                alert('A pipeline is already running.');
+                return;
+            }
+
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task) return;
+
+            const token = localStorage.getItem('gateway_token');
+            if (!token) {
+                alert('Set your gateway token in Settings first.');
+                return;
+            }
+
+            const related = getRelatedTasks(task);
+            const ordered = sortPipelineTasks(related);
+            const pending = ordered.filter(t => t.status !== 'done');
+
+            if (pending.length <= 1) {
+                // Only one task or all done — just run the single task
+                runTask(taskId);
+                return;
+            }
+
+            closeTaskDetail();
+            _pipelineRunning = true;
+            let priorContext = '';
+
+            // Collect any already-completed outputs as prior context
+            for (const t of ordered) {
+                if (t.status === 'done' && t.output) {
+                    priorContext += `### ${t.agent_name} — ${t.title}\n${t.output}\n\n`;
+                }
+            }
+
+            for (const t of ordered) {
+                if (t.status === 'done') continue; // skip already completed
+
+                try {
+                    const output = await runTask(t.id, priorContext || null);
+                    if (output) {
+                        priorContext += `### ${t.agent_name} — ${t.title}\n${output}\n\n`;
+                    }
+                } catch (err) {
+                    console.error(`Pipeline stopped at ${t.title}:`, err);
+                    showIntelToast?.(`Pipeline stopped at "${t.title}" — ${err.message || 'error'}`);
+                    break;
+                }
+            }
+
+            _pipelineRunning = false;
+        }
+
+        function hasPipeline(task) {
+            return getRelatedTasks(task).length > 1;
         }
 
         // ── Delete Task ─────────────────────────────────
