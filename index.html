@@ -4133,8 +4133,8 @@
                             const statusText = isBusy ? `Working on ${busy} task${busy > 1 ? 's' : ''}` : 'Available';
                             return `
                                 <div style="display:flex;align-items:center;gap:10px;padding:7px 0;">
-                                    <div style="width:7px;height:7px;border-radius:50%;background:${a.glow};box-shadow:0 0 6px ${hexToRgba(a.glow, 0.4)};flex-shrink:0;"></div>
-                                    <span style="font-size:13px;font-weight:600;color:${a.glow};min-width:40px;">${a.name}</span>
+                                    <div style="width:7px;height:7px;border-radius:50%;background:${a.color};box-shadow:0 0 6px ${hexToRgba(a.color, 0.4)};flex-shrink:0;"></div>
+                                    <span style="font-size:13px;font-weight:600;color:${a.color};min-width:40px;">${a.name}</span>
                                     <span style="font-size:12px;color:${statusColor};">${statusText}</span>
                                 </div>
                             `;
