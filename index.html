@@ -3951,18 +3951,6 @@
         }
         window.refreshTeams = refreshTeams;
 
-        // Tab switching is initialized at the top of the script block.
-            const btn = document.getElementById('teamsRefreshBtn');
-            if (btn) {
-                btn.classList.add('spinning');
-                setTimeout(() => btn.classList.remove('spinning'), 500);
-            }
-            await loadTeamsTab();
-        }
-        window.refreshTeams = refreshTeams;
-
-        // Tab switching is initialized at the top of the script block.
-
         // ── Dashboard Tab ────────────────────────────────
         function dashboardSkeleton() {
             return `
