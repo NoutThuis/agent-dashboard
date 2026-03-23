@@ -2292,6 +2292,8 @@
 
         function showApp() {
             loginOverlay.classList.add('hidden');
+            loginOverlay.style.display = 'none';
+            appContainer.style.display = '';
             appContainer.classList.add('visible');
             document.body.classList.add('auth-ready');
             requestAnimationFrame(() => {
@@ -3345,6 +3347,7 @@
         })();
 
         function showLogin() {
+            loginOverlay.style.display = '';
             loginOverlay.classList.remove('hidden');
             appContainer.classList.remove('visible');
             document.body.classList.remove('auth-ready');
@@ -3432,7 +3435,11 @@
             const { data: { session } } = await sb.auth.getSession();
             if (session) {
                 showApp();
+                // Hammer: if a valid session exists, force-hide the login overlay.
+                loginOverlay.style.display = 'none';
+                appContainer.style.display = '';
             } else {
+                loginOverlay.style.display = '';
                 showLogin();
             }
         }
