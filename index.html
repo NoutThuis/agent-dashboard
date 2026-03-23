@@ -2293,6 +2293,7 @@
         function showApp() {
             loginOverlay.classList.add('hidden');
             appContainer.classList.add('visible');
+            document.body.classList.add('auth-ready');
             requestAnimationFrame(() => {
                 const dashContainer = document.getElementById('dashboard-container');
                 if (dashContainer && !dashContainer.innerHTML.trim()) {
@@ -3346,6 +3347,21 @@
         function showLogin() {
             loginOverlay.classList.remove('hidden');
             appContainer.classList.remove('visible');
+            document.body.classList.remove('auth-ready');
+        }
+
+        async function forceAuthRefresh(retries = 6, delayMs = 250) {
+            for (let i = 0; i < retries; i++) {
+                const sb = await waitForSupabase();
+                if (!sb) continue;
+                const { data: { session } } = await sb.auth.getSession();
+                if (session) {
+                    showApp();
+                    return true;
+                }
+                await new Promise(r => setTimeout(r, delayMs));
+            }
+            return false;
         }
 
         loginForm.addEventListener('submit', async (e) => {
@@ -3355,7 +3371,7 @@
             loginBtn.textContent = 'Signing in…';
 
             try {
-                const sb = getSupabase();
+                const sb = await waitForSupabase();
                 if (!sb) throw new Error('Supabase not loaded');
 
                 const { error } = await sb.auth.signInWithPassword({
@@ -3364,7 +3380,8 @@
                 });
 
                 if (error) throw error;
-                showApp();
+                const ok = await forceAuthRefresh();
+                if (!ok) throw new Error('Sign in succeeded but session could not be restored in the UI');
             } catch (err) {
                 loginError.textContent = err.message || 'Sign in failed';
                 loginError.classList.add('visible');
@@ -3419,6 +3436,11 @@
                 showLogin();
             }
         }
+
+        window.addEventListener('focus', () => { forceAuthRefresh(2, 100); });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) forceAuthRefresh(2, 100);
+        });
 
         // ── Tab Switching (runs immediately, no dependencies) ─
         (function initTabs() {
