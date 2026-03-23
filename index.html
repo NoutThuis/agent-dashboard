@@ -3380,11 +3380,38 @@
             showLogin();
         }
 
+        let _authListenerBound = false;
+
+        async function waitForSupabase(maxMs = 5000) {
+            const start = Date.now();
+            while (Date.now() - start < maxMs) {
+                const sb = getSupabase();
+                if (sb) return sb;
+                await new Promise(r => setTimeout(r, 50));
+            }
+            return null;
+        }
+
+        async function bindAuthListener() {
+            if (_authListenerBound) return;
+            const sb = await waitForSupabase();
+            if (!sb) return;
+            _authListenerBound = true;
+            sb.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    showApp();
+                } else if (event === 'SIGNED_OUT') {
+                    showLogin();
+                }
+            });
+        }
+
         // Check existing session on load
         async function checkAuth() {
-            const sb = getSupabase();
+            const sb = await waitForSupabase();
             if (!sb) { showLogin(); return; }
 
+            await bindAuthListener();
             const { data: { session } } = await sb.auth.getSession();
             if (session) {
                 showApp();
