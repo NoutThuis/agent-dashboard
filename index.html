@@ -2427,7 +2427,7 @@
                 sourceBadge: 'Found on Twitter/X via @designengineer',
                 momentum: 94,
                 skillMatch: 96,
-                skillNote: 'Mira designs, Ari architects, Noah builds',
+                skillNote: 'Max builds the full stack',
                 trend: 82,
                 trendNote: 'gaining traction this week',
                 complexity: 62,
@@ -2437,7 +2437,7 @@
                 discoveredAt: Date.now() - 45 * 60 * 1000,
                 unread: true,
                 bookmarked: false,
-                deployAgents: ['Mira', 'Ari', 'Noah'],
+                deployAgents: ['Max'],
                 deployTasks: 3,
             },
             {
@@ -2454,12 +2454,12 @@
                 trendNote: 'steady discussion in founder communities',
                 complexity: 32,
                 complexityLabel: 'Low — can be built with existing agent capabilities',
-                description: 'Agents create multiple landing page variants, deploy them, and track conversion metrics in a repeatable loop. Mira designs the variants, Ari defines the testing structure, Noah builds the pages, and Lena reviews experiment outcomes and findings.\n\nThis is valuable because it turns growth experiments into a pipeline instead of a one-off project. Small SaaS teams and agencies could iterate much faster when the full cycle from concept to deployed variation is mostly automated.',
+                description: 'Agents create multiple landing page variants, deploy them, and track conversion metrics in a repeatable loop. Max builds the variants, and Jarvis coordinates testing structure and review.\n\nThis is valuable because it turns growth experiments into a pipeline instead of a one-off project. Small SaaS teams and agencies could iterate much faster when the full cycle from concept to deployed variation is mostly automated.',
                 preview: 'ab-test',
                 discoveredAt: Date.now() - 2 * 60 * 60 * 1000,
                 unread: true,
                 bookmarked: false,
-                deployAgents: ['Mira', 'Ari', 'Noah', 'Lena'],
+                deployAgents: ['Max'],
                 deployTasks: 4,
             },
             {
@@ -2471,7 +2471,7 @@
                 sourceBadge: 'Found on Twitter/X via @indiehacker',
                 momentum: 81,
                 skillMatch: 90,
-                skillNote: 'Strong Noah + Mira alignment',
+                skillNote: 'Strong Max alignment',
                 trend: 65,
                 trendNote: 'steady niche demand',
                 complexity: 58,
@@ -2481,7 +2481,7 @@
                 discoveredAt: Date.now() - 5 * 60 * 60 * 1000,
                 unread: false,
                 bookmarked: true,
-                deployAgents: ['Mira', 'Noah'],
+                deployAgents: ['Max'],
                 deployTasks: 3,
             },
             {
@@ -2493,7 +2493,7 @@
                 sourceBadge: 'Found on Twitter/X via @growthhacker',
                 momentum: 68,
                 skillMatch: 52,
-                skillNote: 'Partial — mostly Lena for review',
+                skillNote: 'Partial — Jarvis for review',
                 trend: 88,
                 trendNote: 'strong momentum right now',
                 complexity: 84,
@@ -2503,7 +2503,7 @@
                 discoveredAt: Date.now() - 9 * 60 * 60 * 1000,
                 unread: true,
                 bookmarked: false,
-                deployAgents: ['Lena'],
+                deployAgents: ['Jarvis'],
                 deployTasks: 2,
             },
             {
@@ -2515,7 +2515,7 @@
                 sourceBadge: 'Found via Dev.to article',
                 momentum: 76,
                 skillMatch: 85,
-                skillNote: 'Mira + Ari + Lena',
+                skillNote: 'Max + Jarvis',
                 trend: 54,
                 trendNote: 'solid but not exploding',
                 complexity: 28,
@@ -2525,7 +2525,7 @@
                 discoveredAt: Date.now() - 15 * 60 * 60 * 1000,
                 unread: false,
                 bookmarked: false,
-                deployAgents: ['Mira', 'Ari', 'Lena'],
+                deployAgents: ['Max', 'Jarvis'],
                 deployTasks: 3,
             },
             {
@@ -2537,7 +2537,7 @@
                 sourceBadge: 'Found on Twitter/X via @buildinpublic',
                 momentum: 72,
                 skillMatch: 79,
-                skillNote: 'Noah + Mira primary',
+                skillNote: 'Max primary',
                 trend: 91,
                 trendNote: 'surging in builder circles',
                 complexity: 82,
@@ -2547,7 +2547,7 @@
                 discoveredAt: Date.now() - 22 * 60 * 60 * 1000,
                 unread: true,
                 bookmarked: false,
-                deployAgents: ['Noah', 'Mira'],
+                deployAgents: ['Max'],
                 deployTasks: 3,
             }
         ];
@@ -2562,7 +2562,7 @@
                 sourceBadge: 'Found on Twitter/X via @opsbuilder',
                 momentum: 83,
                 skillMatch: 91,
-                skillNote: 'Ari + Noah with Lena review',
+                skillNote: 'Max + Jarvis',
                 trend: 69,
                 trendNote: 'showing up in agent ops threads',
                 complexity: 46,
@@ -2573,7 +2573,7 @@
                 unread: true,
                 bookmarked: false,
                 dismissed: false,
-                deployAgents: ['Ari', 'Noah', 'Lena'],
+                deployAgents: ['Max', 'Jarvis'],
                 deployTasks: 3,
             },
             {
@@ -2585,7 +2585,7 @@
                 sourceBadge: 'Found on Reddit r/LocalLLaMA',
                 momentum: 79,
                 skillMatch: 87,
-                skillNote: 'Strong Lena + Ari alignment',
+                skillNote: 'Strong Jarvis alignment',
                 trend: 74,
                 trendNote: 'active discussion in research tooling',
                 complexity: 38,
@@ -2596,7 +2596,7 @@
                 unread: true,
                 bookmarked: false,
                 dismissed: false,
-                deployAgents: ['Lena', 'Ari'],
+                deployAgents: ['Jarvis'],
                 deployTasks: 3,
             }
         ];
@@ -2846,66 +2846,12 @@
             };
 
             // Hardcoded plans for seed use cases
-            const plans = {
-                'ui-library-generator': [
-                    { title: `Design component direction — ${item.title}`, agent_name: 'Mira', category: 'Design' },
-                    { title: `Define system architecture — ${item.title}`, agent_name: 'Ari', category: 'Architecture' },
-                    { title: `Build first component set — ${item.title}`, agent_name: 'Noah', category: 'Development' },
-                ],
-                'landing-ab-pipeline': [
-                    { title: `Design variant set — ${item.title}`, agent_name: 'Mira', category: 'Design' },
-                    { title: `Define experiment structure — ${item.title}`, agent_name: 'Ari', category: 'Architecture' },
-                    { title: `Build A/B landing pages — ${item.title}`, agent_name: 'Noah', category: 'Development' },
-                    { title: `Review metrics + experiment quality — ${item.title}`, agent_name: 'Lena', category: 'Review' },
-                ],
-                'dashboard-template-factory': [
-                    { title: `Design dashboard shell — ${item.title}`, agent_name: 'Mira', category: 'Design' },
-                    { title: `Build reusable dashboard template — ${item.title}`, agent_name: 'Noah', category: 'Development' },
-                    { title: `Review delivery polish — ${item.title}`, agent_name: 'Lena', category: 'Review', priority: 'Normal' },
-                ],
-                'seo-optimizer': [
-                    { title: `Audit content opportunities — ${item.title}`, agent_name: 'Lena', category: 'Review' },
-                    { title: `Prototype rewrite workflow — ${item.title}`, agent_name: 'Manual', category: 'Architecture', priority: 'Normal' },
-                ],
-                'design-system-docs': [
-                    { title: `Map component patterns — ${item.title}`, agent_name: 'Ari', category: 'Architecture' },
-                    { title: `Design docs presentation — ${item.title}`, agent_name: 'Mira', category: 'Design' },
-                    { title: `Review examples + guidance — ${item.title}`, agent_name: 'Lena', category: 'Review' },
-                ],
-                'saas-cloner': [
-                    { title: `Analyze reference UI — ${item.title}`, agent_name: 'Mira', category: 'Design' },
-                    { title: `Rebuild branded frontend — ${item.title}`, agent_name: 'Noah', category: 'Development' },
-                    { title: `Review interaction fidelity — ${item.title}`, agent_name: 'Lena', category: 'Review', priority: 'Normal' },
-                ],
-            };
-
-            // If there's a hardcoded plan, use it
-            if (plans[item.id]) {
-                return plans[item.id].map((task, index) => ({
-                    ...defaults,
-                    ...task,
-                    task_description: (item.description || '') + (item.sourceUrl ? `\n\nSource: ${item.sourceUrl}` : ''),
-                    role: AGENT_ROLES[task.agent_name] || 'User',
-                    metadata: {
-                        source: 'intelligence-tab',
-                        use_case_id: item.id,
-                        use_case_title: item.title,
-                        deploy_index: index + 1,
-                        source_label: item.sourceLabel,
-                        source_url: item.sourceUrl || null,
-                        momentum: item.momentum,
-                    }
-                }));
-            }
-
-            // Dynamic fallback: generate one task per deploy agent
+            // Dynamic: generate one task per deploy agent
             const agentToCategory = {
-                Mira: 'Design', Ari: 'Architecture', Noah: 'Development', Lena: 'Review',
-                Felix: 'Physics', Iris: 'Research', Max: 'Code', Jarvis: 'General', Manual: 'General',
+                Felix: 'Physics', Iris: 'Research', Max: 'Code', Byte: 'General', Jarvis: 'General', Manual: 'General',
             };
             const agentToVerb = {
-                Mira: 'Design', Ari: 'Architect', Noah: 'Build', Lena: 'Review',
-                Felix: 'Solve', Iris: 'Research', Max: 'Implement', Jarvis: 'Execute', Manual: 'Handle',
+                Felix: 'Solve', Iris: 'Research', Max: 'Implement', Byte: 'Scout', Jarvis: 'Execute', Manual: 'Handle',
             };
             const agents = Array.isArray(item.deployAgents) && item.deployAgents.length
                 ? item.deployAgents
@@ -4173,9 +4119,9 @@
             // Panel 3: Workshop Queue
             // TODO: Connect to real task queue system
             const queue = [
-                { title: 'Redesign settings page', agent: 'Mira', priority: '#EF4444', pLabel: 'Urgent' },
-                { title: 'Build form validation', agent: 'Noah', priority: '#F59E0B', pLabel: 'High' },
-                { title: 'Review auth flow', agent: 'Lena', priority: '#3B82F6', pLabel: 'Normal' },
+                { title: 'Implement API endpoint', agent: 'Max', priority: '#EF4444', pLabel: 'Urgent' },
+                { title: 'Research quantum optics papers', agent: 'Iris', priority: '#F59E0B', pLabel: 'High' },
+                { title: 'Explain wave-particle duality', agent: 'Felix', priority: '#3B82F6', pLabel: 'Normal' },
             ];
             const queuePanel = `
                 <div class="glass-card" style="padding:20px 24px;">
@@ -4303,9 +4249,9 @@
         }
 
         // ── Tasks Tab ───────────────────────────────────
-        const AGENT_COLORS = { Jarvis: '#06B6D4', Mira: '#3B82F6', Ari: '#7C3AED', Noah: '#F59E0B', Lena: '#10B981', Felix: '#14B8A6', Iris: '#6366F1', Max: '#F43F5E', Manual: '#FFFFFF' };
-        const AGENT_ROLES = { Jarvis: 'AI Assistant', Mira: 'Frontend Designer', Ari: 'Frontend Architect', Noah: 'Frontend Builder', Lena: 'Frontend Reviewer', Felix: 'Physics Tutor', Iris: 'Research Scout', Max: 'Simulation Engineer', Manual: 'User' };
-        const CAT_COLORS = { Design: '#EC4899', Architecture: '#7C3AED', Development: '#10B981', Review: '#06B6D4', Physics: '#8B5CF6', Research: '#6366F1', Code: '#F59E0B', General: '#6B7280' };
+        const AGENT_COLORS = { Jarvis: '#06B6D4', Felix: '#14B8A6', Iris: '#6366F1', Max: '#3B82F6', Byte: '#F59E0B', Manual: '#FFFFFF' };
+        const AGENT_ROLES = { Jarvis: 'AI Assistant', Felix: 'Physics Tutor', Iris: 'Paper Scout', Max: 'Coding Agent', Byte: 'Tech & AI Scout', Manual: 'User' };
+        const CAT_COLORS = { Physics: '#8B5CF6', Research: '#6366F1', Code: '#3B82F6', General: '#6B7280' };
         const PRI_COLORS = { Urgent: '#EF4444', High: '#F97316', Normal: '#3B82F6', Low: '#6B7280' };
         const TRACK_COLORS = { 'On Track': '#10B981', 'At Risk': '#F59E0B', 'Off Track': '#EF4444' };
         const TASK_STATUS_META = {
@@ -4685,18 +4631,11 @@
                         <option value="Felix">Felix</option>
                         <option value="Iris">Iris</option>
                         <option value="Max">Max</option>
-                        <option value="Mira">Mira</option>
-                        <option value="Ari">Ari</option>
-                        <option value="Noah">Noah</option>
-                        <option value="Lena">Lena</option>
+                        <option value="Byte">Byte</option>
                         <option value="Manual">Manual</option>
                     </select>
                     <select class="kanban-form-select" id="add-category-${status}">
                         <option value="" disabled selected>Category</option>
-                        <option>Design</option>
-                        <option>Architecture</option>
-                        <option>Development</option>
-                        <option>Review</option>
                         <option>Physics</option>
                         <option>Research</option>
                         <option>Code</option>
@@ -4799,10 +4738,6 @@
                 <div class="tasks-filter-bar">
                     <select class="tasks-filter-select" id="tasks-cat-filter" onchange="tasksCategoryFilter=this.value;renderTasksContent();">
                         <option value="All" ${tasksCategoryFilter === 'All' ? 'selected' : ''}>All Categories</option>
-                        <option value="Design" ${tasksCategoryFilter === 'Design' ? 'selected' : ''}>Design</option>
-                        <option value="Architecture" ${tasksCategoryFilter === 'Architecture' ? 'selected' : ''}>Architecture</option>
-                        <option value="Development" ${tasksCategoryFilter === 'Development' ? 'selected' : ''}>Development</option>
-                        <option value="Review" ${tasksCategoryFilter === 'Review' ? 'selected' : ''}>Review</option>
                         <option value="Physics" ${tasksCategoryFilter === 'Physics' ? 'selected' : ''}>Physics</option>
                         <option value="Research" ${tasksCategoryFilter === 'Research' ? 'selected' : ''}>Research</option>
                         <option value="Code" ${tasksCategoryFilter === 'Code' ? 'selected' : ''}>Code</option>
@@ -5067,8 +5002,8 @@
             overlay.id = 'task-edit-overlay';
             overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
-            const agentOptions = ['Jarvis', 'Felix', 'Iris', 'Max', 'Mira', 'Ari', 'Noah', 'Lena', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
-            const catOptions = ['Design', 'Architecture', 'Development', 'Review', 'Physics', 'Research', 'Code', 'General'].map(c => `<option value="${c}" ${task.category === c ? 'selected' : ''}>${c}</option>`).join('');
+            const agentOptions = ['Jarvis', 'Felix', 'Iris', 'Max', 'Byte', 'Manual'].map(a => `<option value="${a}" ${task.agent_name === a ? 'selected' : ''}>${a}</option>`).join('');
+            const catOptions = ['Physics', 'Research', 'Code', 'General'].map(c => `<option value="${c}" ${task.category === c ? 'selected' : ''}>${c}</option>`).join('');
             const priOptions = ['Urgent', 'High', 'Normal', 'Low'].map(p => `<option value="${p}" ${task.priority === p ? 'selected' : ''}>${p}</option>`).join('');
             const trackOptions = ['On Track', 'At Risk', 'Off Track'].map(t2 => `<option value="${t2}" ${task.track_status === t2 ? 'selected' : ''}>${t2}</option>`).join('');
 
@@ -5145,10 +5080,7 @@
                 Felix: 'You are Felix, a physics tutor. Solve the problem step by step with clear reasoning, dimensional analysis, and physical intuition.',
                 Iris: 'You are Iris, a research scout. Find, summarize, and analyze relevant scientific literature. Be thorough but concise.',
                 Max: 'You are Max, a computational physics lab assistant. Write clean, well-commented Python code using NumPy, SciPy, Matplotlib, or SymPy as needed.',
-                Mira: 'You are Mira, a frontend designer. Create distinctive, polished visual designs with clear design direction and rationale.',
-                Ari: 'You are Ari, a frontend architect. Define component architecture, data flow, and technical structure for frontend projects.',
-                Noah: 'You are Noah, a frontend builder. Write clean, production-grade HTML/CSS/JS and React components.',
-                Lena: 'You are Lena, a frontend reviewer. Review code and designs for quality, accessibility, performance, and best practices.',
+                Byte: 'You are Byte, a tech and AI scout. Track AI news, vibe coding trends, new tools, and emerging tech developments. Be concise and insightful.',
             };
             return prompts[agentName] || prompts.Jarvis;
         }
